@@ -1,8 +1,8 @@
 {
-"name":"Collapse ↑",
-"short_name":"Collapse",
-"start_url":"./",
-"display":"standalone",
-"background_color":"#0c0f14",
-"theme_color":"#0c0f14"
+  "name": "Collapse \u2191",
+  "short_name": "Collapse",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0c0f14",
+  "theme_color": "#0c0f14"
 }

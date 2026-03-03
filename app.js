@@ -13,7 +13,6 @@ renderTraits();
 };
 
 var particles=[];
-var history=[];
 var current=null;
 var usage={};
 var seenExplain=localStorage.getItem("seenExplain");
@@ -23,19 +22,16 @@ this.el=document.createElement("div");
 this.el.className="particle";
 this.x=Math.random()*window.innerWidth;
 this.y=Math.random()*window.innerHeight;
-this.dx=(Math.random()-.5)*.2;
-this.dy=(Math.random()-.5)*.2;
-this.blur=3;
-this.opacity=.6;
+this.angle=Math.random()*Math.PI*2;
+this.speed=0.15+Math.random()*0.15;
 field.appendChild(this.el);
 }
 
 Particle.prototype.update=function(){
-this.x+=this.dx;
-this.y+=this.dy;
+this.angle+=0.002;
+this.x+=Math.cos(this.angle)*this.speed;
+this.y+=Math.sin(this.angle)*this.speed;
 this.el.style.transform="translate("+this.x+"px,"+this.y+"px)";
-this.el.style.opacity=this.opacity;
-this.el.style.filter="blur("+this.blur+"px)";
 };
 
 function init(){
@@ -53,16 +49,14 @@ requestAnimationFrame(animate);
 
 function collapse(){
 if(current){
-current.blur=0;
-current.opacity=.7;
-history.push(current);
+current.el.style.opacity=.6;
 }
+
 var available=particles.filter(function(p){return p!==current;});
 current=available[Math.floor(Math.random()*available.length)];
-current.blur=0;
-current.opacity=1;
-current.dx=0;
-current.dy=0;
+current.el.style.filter="blur(0px)";
+current.el.style.opacity=1;
+current.speed=0;
 
 setTimeout(function(){
 renderTraits();
@@ -100,17 +94,9 @@ showCue(key);
 }
 
 function applyTrait(key){
-var hueMap={
-calm:-10,
-courageous:8,
-clear:-5,
-present:0,
-expansive:12,
-centered:-15,
-luminous:20
-};
+var hueMap={calm:-10,courageous:8,clear:-5,present:0,expansive:12,centered:-15,luminous:20};
 var h=40+hueMap[key];
-current.el.style.boxShadow="0 0 24px hsla("+h+",70%,70%,.35)";
+current.el.style.boxShadow="0 0 28px hsla("+h+",70%,70%,.45), 0 0 60px hsla("+h+",70%,70%,.25)";
 }
 
 function showCue(key){

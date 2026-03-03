@@ -9,22 +9,31 @@
 
 <style>
 :root {
-  --bg-center:#10141b;
-  --bg-edge:#0c0f14;
-  --core:rgba(240,204,136,1);
+  --gold-core: rgba(240,204,136,1);
 }
 
 body{
   margin:0;
   overflow:hidden;
   font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-  background:radial-gradient(circle at center,var(--bg-center),var(--bg-edge));
+  background:
+    radial-gradient(circle at center, #141820 0%, #0c0f14 60%, #000000 100%);
   color:#e8d8b5;
 }
 
 #field{
   position:absolute;
   inset:0;
+  overflow:hidden;
+}
+
+.star-layer{
+  position:absolute;
+  inset:0;
+  background-image: radial-gradient(rgba(255,230,180,.15) 1px, transparent 1px);
+  background-size: 120px 120px;
+  opacity:.15;
+  pointer-events:none;
 }
 
 .particle{
@@ -32,7 +41,9 @@ body{
   width:18px;
   height:18px;
   border-radius:50%;
-  background:var(--core);
+  background:var(--gold-core);
+  box-shadow: 0 0 18px rgba(240,204,136,.3),
+              0 0 40px rgba(240,204,136,.15);
   will-change:transform,opacity,filter,box-shadow;
 }
 
@@ -42,8 +53,8 @@ body{
   width:100%;
   text-align:center;
   opacity:0;
-  filter:blur(4px);
-  transition:opacity .6s ease, filter .6s ease;
+  filter:blur(6px);
+  transition:opacity .7s ease, filter .7s ease;
 }
 
 #traits.visible{
@@ -81,7 +92,7 @@ body{
   justify-content:center;
   text-align:center;
   padding:40px;
-  background:rgba(12,15,20,.78);
+  background:rgba(12,15,20,.85);
   white-space:pre-line;
 }
 
@@ -103,14 +114,17 @@ body{
 
 <body>
 
-<div id="field"></div>
+<div id="field">
+  <div class="star-layer"></div>
+</div>
+
 <div id="traits"></div>
 <div id="cue"></div>
 <div id="explain"></div>
 <div id="lang">EN · ES</div>
 
-<script src="data.js?v=1.0.0"></script>
-<script src="app.js?v=1.0.0"></script>
+<script src="data.js?v=1.0.1"></script>
+<script src="app.js?v=1.0.1"></script>
 
 <script>
 if('serviceWorker' in navigator){

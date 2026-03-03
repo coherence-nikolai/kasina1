@@ -1,5 +1,5 @@
-var CACHE="collapse-v1.0.0";
-var FILES=["./","index.html","app.js?v=1.0.0","data.js?v=1.0.0"];
+var CACHE="collapse-v1.0.1";
+var FILES=["./","index.html","app.js?v=1.0.1","data.js?v=1.0.1"];
 
 self.addEventListener("install",function(e){
 e.waitUntil(caches.open(CACHE).then(function(c){return c.addAll(FILES);}));
