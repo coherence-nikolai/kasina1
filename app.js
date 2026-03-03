@@ -808,8 +808,7 @@ function startBreath() {
       breathRunning = false;
       // Final text already fading — show end message
       bDelay(() => {
-        bend.innerHTML = `<p>${t.breathEnd(stateName).replace(/
-/g,'<br>')}</p>`;
+        bend.innerHTML = '<p>' + t.breathEnd(stateName).split('\n').join('<br>') + '</p>';
         bend.classList.add('on');
         const tapEl = document.getElementById('tapNext');
         bDelay(() => {
