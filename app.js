@@ -464,6 +464,15 @@ function buildField() {
     grid.appendChild(o);
   });
   document.querySelectorAll('.al').forEach(l => l.classList.add('on'));
+  // Force all orbs into clean superposition state — clear any iOS sticky touch residue
+  document.querySelectorAll('.orb').forEach(el => {
+    el.classList.remove('collapsing', 'fading');
+    el.style.filter = '';
+    el.style.opacity = '';
+    el.style.borderColor = '';
+    el.style.boxShadow = '';
+    el.blur();
+  });
   particlesHidden = false;
   initScene('field');
 }
