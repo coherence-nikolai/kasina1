@@ -401,6 +401,7 @@ html, body {
 </style>
 </head>
 <body>
+<!-- v36.2 -->
 
 <div class="aurora"><div class="al a1"></div><div class="al a2"></div><div class="al a3"></div></div>
 <canvas id="particleCanvas"></canvas>
@@ -506,5 +507,40 @@ html, body {
 
 <script src="data.js"></script>
 <script src="app.js"></script>
+
+<div id="debug" style="position:fixed;left:10px;right:10px;bottom:10px;max-height:40vh;overflow:auto;
+background:rgba(0,0,0,.75);color:#e8eaf0;font:12px/1.4 monospace;padding:10px;border:1px solid rgba(255,255,255,.15);
+border-radius:10px;display:none;z-index:9999;">
+  <div><strong>Debug</strong> <span id="dbgVer"></span></div>
+  <pre id="dbgLog" style="white-space:pre-wrap;margin:8px 0 0;"></pre>
+</div>
+<script>
+  (function(){
+    const dbg=document.getElementById('debug');
+    const log=document.getElementById('dbgLog');
+    const ver=document.getElementById('dbgVer');
+    ver.textContent = 'v36.2';
+    let taps=0; let t=null;
+    function toggle(){ dbg.style.display = (dbg.style.display==='none'?'block':'none'); }
+    document.addEventListener('pointerup', (e)=>{
+      // triple-tap topbar area to toggle debug
+      const y=e.clientY||0;
+      if (y>0 && y<120){
+        taps++; clearTimeout(t);
+        t=setTimeout(()=>{taps=0;}, 500);
+        if (taps>=3){ taps=0; toggle(); }
+      }
+    }, {passive:true});
+    window.__dbg = function(msg){
+      try{
+        dbg.style.display='block';
+        log.textContent += msg + "\n";
+        log.scrollTop = log.scrollHeight;
+      }catch(_){}
+    };
+    window.__dbg('boot v36.2 at ' + new Date().toISOString());
+  })();
+</script>
+
 </body>
 </html>

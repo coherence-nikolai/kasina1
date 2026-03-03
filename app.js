@@ -1,3 +1,11 @@
+// v36.2 debug harness
+(function(){
+  const dbg = (typeof window !== 'undefined' && window.__dbg) ? window.__dbg : null;
+  function log(msg){ try{ dbg && dbg(msg); }catch(_ ){} }
+  window.addEventListener('error', (e)=>{ log('[error] ' + (e.message||e.error)); });
+  window.addEventListener('unhandledrejection', (e)=>{ log('[promise] ' + (e.reason && e.reason.message ? e.reason.message : String(e.reason))); });
+})();
+
 // ═══════════════════════════════════════
 // COLLAPSE↑ — APP LOGIC v3.5
 // ═══════════════════════════════════════
