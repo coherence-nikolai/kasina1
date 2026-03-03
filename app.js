@@ -288,7 +288,7 @@ function animLoop() {
 initPts(); initSpParticles(); initScene('hidden'); animLoop();
 
 // SCREEN TRANSITIONS
-function crossFade(fromId, toId, dur, cb) {
+function crossFade(fromId, toId, dur, cb, preCb) {
   const from = document.getElementById(fromId);
   const to   = document.getElementById(toId);
   if (!from || !to) return;
@@ -300,6 +300,8 @@ function crossFade(fromId, toId, dur, cb) {
     from.style.transition = ''; from.style.opacity = ''; from.style.pointerEvents = '';
     to.style.opacity = '0'; to.style.transition = 'none';
     to.classList.add('active');
+    // preCb: runs while target is in DOM but invisible — build grid here, user sees nothing
+    if (preCb) preCb();
     requestAnimationFrame(() => requestAnimationFrame(() => {
       to.style.transition = 'opacity ' + dur + 's ease';
       to.style.opacity = '1'; to.style.pointerEvents = 'all';
@@ -349,7 +351,7 @@ function runSigil() {
   if (fast) {
     setTimeout(() => { initAudio(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); wordEl.classList.add('on'); }, 300);
     setTimeout(() => { arrowEl.classList.add('on'); playCollapseSound(); }, 900);
-    setTimeout(() => { tryDrone(); buildField(); crossFade('s-sigil', 's-field', 1.2); }, 3200);
+    setTimeout(() => { tryDrone(); crossFade('s-sigil', 's-field', 1.2, null, buildField); }, 3200);
   } else {
     setTimeout(() => { initAudio(); if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume(); wordEl.classList.add('on'); }, 1000);
     setTimeout(() => { arrowEl.classList.add('on'); playCollapseSound(); }, 3200);
@@ -677,7 +679,7 @@ document.getElementById('retBtn').addEventListener('click', () => {
   const gh = document.getElementById('ghosts');
   gh.style.transition = 'opacity 0.8s ease'; gh.style.opacity = '0';
   setTimeout(() => { gh.innerHTML = ''; gh.style.cssText = ''; }, 900);
-  crossFade('s-collapse', 's-field', 1.0, () => { buildField(); tryDrone(); });
+  crossFade('s-collapse', 's-field', 1.0, null, () => { buildField(); tryDrone(); });
 });
 
 // STILL
@@ -694,7 +696,7 @@ function enterStill() {
   }, 1000);
 }
 document.getElementById('stillBack').addEventListener('click', () => {
-  clearInterval(stillT); crossFade('s-still', 's-field', 1.0, () => { buildField(); tryDrone(); });
+  clearInterval(stillT); crossFade('s-still', 's-field', 1.0, null, () => { buildField(); tryDrone(); });
 });
 
 // BREATH GLYPH
@@ -712,8 +714,7 @@ function enterField() {
   tryDrone();
   localStorage.setItem('cu_v38', '1');
   visited = true;
-  buildField();
-  crossFade('s-init', 's-field', 1.2);
+  crossFade('s-init', 's-field', 1.2, null, buildField);
 }
 
 // BOOT
