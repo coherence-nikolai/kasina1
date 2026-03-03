@@ -1,5 +1,5 @@
 /* Collapse↑ service worker (offline-first, animation-safe) */
-const CACHE_VERSION = 'cu-v36';
+const CACHE_VERSION = 'cu-v35e';
 const APP_SHELL = [
   './',
   './index.html',

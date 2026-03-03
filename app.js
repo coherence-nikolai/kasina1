@@ -269,9 +269,9 @@ function buildInit() {
     // Build clean, single-voice content — no labels, no colour chaos
     let h = '';
 
-    if (s.big)   h += `<div class="s-main">${s.big.replace(/\n|\n/g,'<br>').replace(/<em>/g,'<b>').replace(/<\/em>/g,'</b>')}</div>`;
+    if (s.big)   h += `<div class="s-main">${s.big.replace(/\n/g,'<br>').replace(/<em>/g,'<b>').replace(/<\/em>/g,'</b>')}</div>`;
     if (s.eq)    h += `<div class="s-eq">${s.eq}<br><span style="color:rgba(201,169,110,.32);font-size:.85em">${s.eqSub}</span></div>`;
-    if (s.small) h += `<div class="s-sup">${s.small.replace(/\n|\n/g,'<br>').replace(/<em>/g,'<b>').replace(/<\/em>/g,'</b>')}</div>`;
+    if (s.small) h += `<div class="s-sup">${s.small.replace(/\n/g,'<br>').replace(/<em>/g,'<b>').replace(/<\/em>/g,'</b>')}</div>`;
     if (s.note)  h += `<div class="s-note">${s.note.replace(/<span>/g,'<b>').replace(/<\/span>/g,'</b>')}</div>`;
     if (s.isLast) h += `<button class="ready-btn" id="readyBtn">${TRANSLATIONS[lang].readyBtn}</button>`;
 
@@ -431,7 +431,7 @@ function selectState(state) {
   document.getElementById('imagLabel').textContent  = t.imagLabel;
   document.getElementById('imagPrompt').textContent = getImagination(lang, state.name);
   document.getElementById('obsNote').innerHTML      =
-    (n === 1 ? t.obsFirst(state.name) : t.obsMany(state.name, n)).replace(/\n|\n/g,'<br>');
+    (n === 1 ? t.obsFirst(state.name) : t.obsMany(state.name, n)).replace(/\n/g,'<br>');
   document.getElementById('qlabel').textContent     = t.qlabel;
   document.getElementById('qtext').textContent      = state.question;
   document.getElementById('retBtn').textContent     = t.retBtn;
@@ -551,7 +551,7 @@ function startBreath() {
       bDelay(() => {
         sn.style.transition = 'opacity 1s ease';
         sn.style.opacity    = '1';
-        bend.innerHTML      = `<p>${t.breathEnd(stateName).replace(/\n|\n/g,'<br>')}</p>`;
+        bend.innerHTML      = `<p>${t.breathEnd(stateName).replace(/\n/g,'<br>')}</p>`;
         bend.classList.add('on');
         ctr.textContent     = '';
         // Show tap hint so user knows they can continue

@@ -3,8 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="theme-color" content="#0c0f14">
-<meta name="color-scheme" content="dark">
 <title>Collapse↑</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -387,6 +385,12 @@ html, body {
 .still-txt { font-size:var(--fb);color:var(--cream-dim);text-align:center;line-height:1.82;font-weight:300; }
 .still-tmr { font-size:var(--fb);letter-spacing:.18em;color:var(--gold-dim);font-weight:300; }
 </style>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#090805">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Collapse↑">
 </head>
 <body>
 
@@ -490,7 +494,14 @@ html, body {
   <button class="return-btn" id="stillBack"></button>
 </div>
 
-<script src="data.js?v=3.5.1"></script>
-<script src="app.js?v=3.5.1"></script>
+<script src="data.js?v=35e"></script>
+<script src="app.js?v=35e"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js');
+    });
+  }
+</script>
 </body>
 </html>

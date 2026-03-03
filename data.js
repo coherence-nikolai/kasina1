@@ -94,7 +94,7 @@ const STATES = {
     { name:'Valiente', question:"¿Hacia qué quiere avanzar esta versión tuya ahora mismo?", eq:'|ψ⟩ → |valiente⟩ — fuerza colapsada desde puro potencial' },
     { name:'Claro', question:"¿Qué se vuelve obvio cuando confías en esta claridad?", eq:'|ψ⟩ → |claro⟩ — señal afilada desde la niebla superpuesta' },
     { name:'Expansivo', question:"¿Qué se expande cuando dejas de medirte como pequeño?", eq:'|ψ⟩ → |expansivo⟩ — el campo abriéndose más allá de sus bordes' },
-    { name:'Centrado', question:"¿Qué se vuelve posible cuando estás centrado?", eq:'|ψ⟩ → |centrado⟩ — presencia colapsada en este momento exacto' },
+    { name:'Arraigado', question:"¿Qué se vuelve posible cuando estás tan enraizado?", eq:'|ψ⟩ → |arraigado⟩ — presencia colapsada en este momento exacto' },
     { name:'Presente', question:"¿Qué hay aquí, ahora mismo, que aún no has visto del todo?", eq:'|ψ⟩ → |presente⟩ — todos los estados futuros comienzan con esta observación' },
     { name:'Luminoso', question:"¿Dónde quiere aterrizar esta luz en tu próxima conversación?", eq:'|ψ⟩ → |luminoso⟩ — el colapso más alto disponible seleccionado' },
     { name:'Abierto', question:"¿Qué ha estado esperando que dejes de resistirlo?", eq:'|ψ⟩ → |abierto⟩ — resistencia disuelta, campo restaurado' }
