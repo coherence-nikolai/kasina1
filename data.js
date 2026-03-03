@@ -82,7 +82,7 @@ const TRANSLATIONS = {
 const STATES = {
   en: [
     { name:'Calm', question:"Where can this steadiness move through you in the next hour?", eq:'|ψ⟩ → |calm⟩ — stillness selected from infinite noise' },
-    { name:'Courageous', question:"What does this version of you want to step toward right now?", eq:'|ψ⟩ → |courageous⟩ — strength collapsed from pure potential' },
+    { name:'Brave', question:"What does this version of you want to step toward right now?", eq:'|ψ⟩ → |brave⟩ — courage collapsed from pure potential' },
     { name:'Clear', question:"What becomes obvious when you trust this clarity?", eq:'|ψ⟩ → |clear⟩ — signal sharpened from superposed fog' },
     { name:'Expansive', question:"What expands when you stop measuring yourself as small?", eq:'|ψ⟩ → |expansive⟩ — the field opening beyond its edges' },
     { name:'Grounded', question:"What becomes possible when you are this rooted?", eq:'|ψ⟩ → |grounded⟩ — presence collapsed into this exact moment' },
@@ -122,7 +122,7 @@ const STEPS = {
     },
     {
       big:'Every version of you\nexists right now.',
-      small:'Calm. Courageous. Clear. Present.\nAll equally real. All waiting.',
+      small:'Calm. Brave. Clear. Present.\nAll equally real. All waiting.',
       ps:'all_labelled'
     },
     {
@@ -215,7 +215,7 @@ const IMAGINATION = {
       "Remember a moment after something difficult finally ended. That exhale. Find it again.",
       "Visualise yourself an hour from now, moving slowly and without resistance through your day."
     ],
-    Courageous: [
+    Brave: [
       "Remember a moment you moved toward something that frightened you. Feel where that lived in your body.",
       "Think of a time you spoke the truth when silence would have been easier. Locate that feeling.",
       "Visualise yourself walking through a door you have been standing outside of. Feel your hand on the handle.",

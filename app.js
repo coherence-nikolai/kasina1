@@ -426,7 +426,7 @@ function buildField() {
     o.style.animationDelay = (Math.random() * 2) + 's';
     const go = () => {
       // Collapse animation: chosen snaps clear, others blur out
-      document.querySelectorAll('.orb').forEach(el => el.classList.add('fading'));
+      document.querySelectorAll('.orb').forEach(el => { el.classList.remove('collapsing'); el.classList.add('fading'); });
       o.classList.remove('fading'); o.classList.add('collapsing');
       setTimeout(() => selectState(st), 320);
     };
@@ -516,7 +516,17 @@ function selectState(state) {
   clearAllBreath();
   document.getElementById('tapNext').textContent = t.tapHint;
   particlesHidden = false;
+
+  // FIX: teleport chosen particle to final position NOW, hidden under the crossfade
+  // Field screen is still visible but fading — user never sees the jump
+  const chosen = spParticles[spChosen % spParticles.length];
+  if (chosen) {
+    chosen.cx = 0.5; chosen.cy = 0.14;
+    chosen.targetCx = 0.5; chosen.targetCy = 0.14;
+    chosen.x = 0.5 * cv.width; chosen.y = 0.14 * cv.height;
+  }
   initScene('state_chosen', spChosen);
+
   crossFade('s-field', 's-collapse', 1.0, () => {
     gh.style.transition = 'opacity 1.8s ease'; gh.style.opacity = '1';
     setTimeout(() => showCollapseStage(1), 200);
@@ -526,18 +536,21 @@ function selectState(state) {
 // COLLAPSE STAGES
 function showCollapseStage(n) {
   const current = document.querySelector('.cp-stage.on');
-  // FIX: hide sp particles during breath, sole light is bp dot
   if (n === 4) { particlesHidden = true; }
   else { particlesHidden = false; initScene('state_chosen', spChosen); }
   const reveal = () => {
     collapseStage = n;
     const el = document.getElementById('cs' + n);
     if (!el) return;
-    el.style.cssText = 'opacity:0; pointer-events:none; transition:none;';
+    // Start fully hidden and invisible
+    el.style.cssText = 'opacity:0;pointer-events:none;transition:none;visibility:hidden;';
     el.classList.add('on');
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      el.style.transition = 'opacity 0.9s ease'; el.style.opacity = '1'; el.style.pointerEvents = 'all';
-      setTimeout(() => { el.style.transition = ''; el.style.opacity = ''; el.style.pointerEvents = ''; }, 950);
+      el.style.visibility = 'visible';
+      el.style.transition = 'opacity 0.9s ease';
+      el.style.opacity = '1';
+      el.style.pointerEvents = 'all';
+      setTimeout(() => { el.style.cssText = ''; }, 950);
     }));
     const tapEl = document.getElementById('tapNext');
     tapEl.style.transition = 'opacity 0.7s ease';
@@ -545,8 +558,14 @@ function showCollapseStage(n) {
     if (n === 4) startBreath();
   };
   if (current) {
-    current.style.transition = 'opacity 0.7s ease'; current.style.opacity = '0'; current.style.pointerEvents = 'none';
-    setTimeout(() => { current.classList.remove('on'); current.style.cssText = 'display:none;'; reveal(); }, 750);
+    current.style.transition = 'opacity 0.7s ease';
+    current.style.opacity = '0';
+    current.style.pointerEvents = 'none';
+    setTimeout(() => {
+      current.classList.remove('on');
+      current.style.cssText = 'opacity:0;visibility:hidden;display:none;';
+      reveal();
+    }, 750);
   } else { reveal(); }
 }
 
