@@ -63,6 +63,31 @@ a { color:inherit; text-decoration:none; }
 .screen { position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:0;pointer-events:none;padding:clamp(24px,6vw,48px) clamp(20px,5vw,36px); }
 .screen.active { opacity:1;pointer-events:all; }
 
+/* ── DESKTOP PANEL ── */
+@media (min-width:600px) {
+  .screen {
+    /* Centre a mobile-width panel on desktop */
+    left:50%;
+    transform:translateX(-50%);
+    width:min(480px, 100vw);
+    right:auto;
+    border-left:1px solid rgba(201,169,110,.04);
+    border-right:1px solid rgba(201,169,110,.04);
+  }
+  #chrome {
+    left:50%;
+    transform:translateX(-50%);
+    width:min(480px, 100vw);
+  }
+  #taph, #tapNext {
+    /* Keep tap hints centred within the panel */
+    left:50%;
+    transform:translateX(-50%);
+  }
+  .grid { max-width:440px; }
+  .stage-inner { max-width:420px; }
+}
+
 /* ── BURST ── */
 .burst-el { position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:0;height:0;border-radius:50%;background:radial-gradient(circle,rgba(255,232,176,.60) 0%,rgba(255,200,80,.22) 30%,transparent 70%);pointer-events:none;z-index:200;opacity:0; }
 .burst-el.go { animation:bx 1s cubic-bezier(.16,1,.3,1) forwards; }
@@ -404,17 +429,6 @@ a { color:inherit; text-decoration:none; }
 .orb.collapsing { filter:blur(0px) !important; opacity:1 !important; }
 .orb.fading { filter:blur(5px) !important; opacity:0.08 !important; pointer-events:none; transition:filter 0.4s ease, opacity 0.4s ease; }
 
-
-/* Desktop layout */
-@media (min-width: 600px) {
-  #s-field, #s-init, #s-sigil, #s-collapse, #s-still {
-    align-items: center;
-  }
-  .grid { max-width: 480px; }
-  .cp-stage { max-width: 480px; margin: 0 auto; }
-  #s-collapse { padding-top: 60px; }
-  .step { max-width: 480px; }
-}
 
 </style>
 <link rel="manifest" href="manifest.webmanifest">

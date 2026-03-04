@@ -104,9 +104,22 @@ function clearAllBreath() {
 const cv = document.getElementById('particleCanvas');
 const cx = cv.getContext('2d');
 let pts = [];
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 function rsz() {
-  cv.width  = innerWidth;
-  cv.height = innerHeight;
+  if (isIOS) {
+    // iOS handles DPR natively — never scale the canvas manually
+    cv.width  = innerWidth;
+    cv.height = innerHeight;
+  } else {
+    // Desktop: scale for crisp HiDPI rendering
+    const dpr = window.devicePixelRatio || 1;
+    cv.width  = innerWidth  * dpr;
+    cv.height = innerHeight * dpr;
+    cv.style.width  = innerWidth  + 'px';
+    cv.style.height = innerHeight + 'px';
+    cx.resetTransform();
+    cx.scale(dpr, dpr);
+  }
 }
 window.addEventListener('resize', rsz); rsz();
 
@@ -571,8 +584,30 @@ function selectState(state) {
 // COLLAPSE STAGES
 function showCollapseStage(n) {
   const current = document.querySelector('.cp-stage.on');
-  if (n === 4) { particlesHidden = true; }
-  else { particlesHidden = false; initScene('state_chosen', spChosen); }
+  if (n === 4) {
+    particlesHidden = true;
+  } else if (n === 5) {
+    // Transition from breath: place particle at centre (matching bp dot), then rise
+    const bp = document.getElementById('bp');
+    const chosen = spParticles[spChosen % spParticles.length];
+    if (chosen) {
+      // Snap particle to centre — same position as bp dot
+      chosen.cx = 0.5; chosen.cy = 0.5;
+      chosen.targetCx = 0.5; chosen.targetCy = 0.14; // target = top
+      chosen.x = 0.5 * cv.width; chosen.y = 0.5 * cv.height;
+      chosen.targetAlpha = 1.0; chosen.targetClarity = 1.0;
+      chosen._flickering = false;
+    }
+    particlesHidden = false;
+    // Fade bp out as particle rises
+    bp.style.transition = 'opacity 1.2s ease';
+    bp.style.opacity = '0';
+    setTimeout(() => { bp.className = 'bp neutral'; bp.style.opacity = ''; bp.style.transition = ''; }, 1300);
+    initScene('state_chosen', spChosen);
+  } else {
+    particlesHidden = false;
+    initScene('state_chosen', spChosen);
+  }
   const reveal = () => {
     collapseStage = n;
     const el = document.getElementById('cs' + n);
