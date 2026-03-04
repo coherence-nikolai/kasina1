@@ -105,12 +105,8 @@ const cv = document.getElementById('particleCanvas');
 const cx = cv.getContext('2d');
 let pts = [];
 function rsz() {
-  const dpr = window.devicePixelRatio || 1;
-  cv.width  = innerWidth  * dpr;
-  cv.height = innerHeight * dpr;
-  cv.style.width  = innerWidth  + 'px';
-  cv.style.height = innerHeight + 'px';
-  cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cv.width  = innerWidth;
+  cv.height = innerHeight;
 }
 window.addEventListener('resize', rsz); rsz();
 
