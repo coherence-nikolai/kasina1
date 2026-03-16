@@ -144,7 +144,10 @@
 </head>
 <body>
 <canvas id="mainCanvas"></canvas>
-<canvas id="introCanvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:300;pointer-events:none"></canvas>
+<canvas id="introCanvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:300;pointer-events:all"></canvas>
+<div id="introEnter" style="position:fixed;bottom:max(env(safe-area-inset-bottom),40px);left:50%;transform:translateX(-50%);z-index:400;opacity:0;transition:opacity 2s ease;pointer-events:none">
+  <button onclick="enterMenu()" style="background:rgba(6,6,10,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(232,228,220,.18);border-radius:999px;padding:14px 32px;font-family:var(--serif);font-size:14px;letter-spacing:.18em;text-transform:lowercase;color:rgba(232,228,220,.60);cursor:pointer;-webkit-tap-highlight-color:transparent">enter</button>
+</div>
 
 <button id="topBack" onclick="goHome()">←</button>
 
@@ -171,6 +174,7 @@
     <button id="returnBtn" onclick="logReturn()">
       <div id="returnCount">0</div>
       <div id="returnLabel">returns</div>
+      <div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:rgba(232,228,220,.12);font-weight:300;text-align:center;max-width:160px;line-height:1.6;margin-top:4px">tap each time your mind wanders and returns</div>
     </button>
   </div>
   <button id="practiceEnd" onclick="endPractice()">end</button>
@@ -333,16 +337,10 @@ function runIntro(){
     }
   });
 
-  // Fade out
-  if(iT>5.5){
-    var fadeOut=(iT-5.5)/1.8;
-    iX.fillStyle='rgba(6,6,10,'+Math.min(1,fadeOut)+')';
-    iX.fillRect(0,0,iW,iH);
-    if(fadeOut>=1){
-      iDone=true;
-      iC.style.display='none';
-      document.getElementById('s-home').classList.add('active');
-    }
+  // Show enter button after animation has fully bloomed
+  if(iT>2.5&&iT<2.6){
+    var enterEl=document.getElementById('introEnter');
+    enterEl.style.opacity='1';enterEl.style.pointerEvents='all';
   }
 }
 runIntro();
@@ -705,59 +703,88 @@ function drawEarth(cx,cy,rgb){
 }
 
 function drawAir(cx,cy,rgb){
+  // Very subtle central glow — air is nearly invisible
+  var ag=X.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*.5);
+  ag.addColorStop(0,'rgba('+rgb+',.06)');ag.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=ag;X.fillRect(0,0,W,H);
   mistP.forEach(function(p){
     p.x+=p.vx;p.y+=p.vy;p.life+=p.ls;
     if(p.life>1){p.life=0;p.x=(Math.random()*2-1)*.7;p.y=(Math.random()*2-1)*.7;}
     var fade=Math.sin(p.life*Math.PI);
     var px=cx+p.x*W*.45,py=cy+p.y*H*.45;
-    var pr=p.r*Math.min(W,H)*.5;
+    var pr=p.r*Math.min(W,H)*.18; // much smaller
     if(p.wisp){
-      var wx=px+(p.x>0?1:-1)*p.life*W*.15,wy=py+(p.y>0?1:-1)*p.life*H*.12;
+      var wx=px+(p.x>0?1:-1)*p.life*W*.10,wy=py+(p.y>0?1:-1)*p.life*H*.08;
       var wg=X.createLinearGradient(px,py,wx,wy);
-      wg.addColorStop(0,'rgba('+rgb+','+(fade*p.a*.4)+')');wg.addColorStop(1,'rgba('+rgb+',0)');
+      wg.addColorStop(0,'rgba('+rgb+','+(fade*p.a*.18)+')');wg.addColorStop(1,'rgba('+rgb+',0)');
       X.beginPath();X.moveTo(px,py);X.lineTo(wx,wy);X.strokeStyle=wg;X.lineWidth=pr*.3;X.stroke();
     } else {
-      for(var b=0;b<4;b++){var br=pr*(1+b*1.0);var ba=fade*p.a*(0.45-b*.09);if(ba<.008)continue;X.beginPath();X.arc(px,py,br,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+ba.toFixed(3)+')';X.fill();}
+      for(var b=0;b<3;b++){var br=pr*(1+b*.8);var ba=fade*p.a*(0.18-b*.05);if(ba<.004)continue;X.beginPath();X.arc(px,py,br,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+ba.toFixed(3)+')';X.fill();}
     }
   });
-  // Rotating light
+  // Rotating light — very faint
   var lx=cx+Math.cos(lightAngle)*W*.2,ly=cy+Math.sin(lightAngle)*H*.15;
   var lg=X.createRadialGradient(lx,ly,0,cx,cy,W*.5);
-  lg.addColorStop(0,'rgba('+rgb+',.05)');lg.addColorStop(1,'rgba('+rgb+',0)');
+  lg.addColorStop(0,'rgba('+rgb+',.03)');lg.addColorStop(1,'rgba('+rgb+',0)');
   X.fillStyle=lg;X.fillRect(0,0,W,H);
 }
 
 function drawLight(cx,cy,rgb){
   var settle=settleLevel;
-  var pulse=Math.sin(T*.5)*.06;
-  // Central light source — gets brighter as settle increases
-  for(var i=4;i>=0;i--){
-    var lr=Math.min(W,H)*(.08+i*.14+pulse+settle*.12);
-    var la=(0.55-i*.09)*(0.4+settle*.6);
-    var lg=X.createRadialGradient(cx,cy,0,cx,cy,lr);
-    lg.addColorStop(0,'rgba('+rgb+','+la+')');
-    lg.addColorStop(1,'rgba('+rgb+',0)');
-    X.fillStyle=lg;X.fillRect(0,0,W,H);
+  var pulse=Math.sin(T*.5)*.05+Math.sin(T*1.3)*.03;
+  var discR=Math.min(W,H)*(.18+pulse+settle*.06);
+
+  // Deep outer glow — light bleeding into darkness
+  for(var gi=6;gi>=0;gi--){
+    var gr=discR*(1.2+gi*.5);
+    var ga=(0.14-gi*.018)*(0.5+settle*.5);
+    if(ga<.003)continue;
+    var gg=X.createRadialGradient(cx,cy,0,cx,cy,gr);
+    gg.addColorStop(0,'rgba('+rgb+','+ga+')');
+    gg.addColorStop(1,'rgba('+rgb+',0)');
+    X.fillStyle=gg;X.fillRect(0,0,W,H);
   }
-  // Rays — very subtle
-  for(var r=0;r<8;r++){
-    var angle=r/8*Math.PI*2+lightAngle*.3;
-    var rayLen=Math.min(W,H)*(.25+Math.sin(T*.8+r)*.06+settle*.15);
+
+  // The circle of light — like sunlight through a hole, toilet-roll focused
+  var core=X.createRadialGradient(cx,cy,0,cx,cy,discR);
+  core.addColorStop(0,'rgba(255,255,245,'+(0.98+settle*.02)+')'); // pure white-gold centre
+  core.addColorStop(.25,'rgba('+rgb+','+(0.90+settle*.08)+')');
+  core.addColorStop(.75,'rgba('+rgb+','+(0.65+settle*.20)+')');
+  core.addColorStop(.92,'rgba('+rgb+',.30)');
+  core.addColorStop(1,'rgba('+rgb+',0)');
+  X.beginPath();X.arc(cx,cy,discR,0,Math.PI*2);X.fillStyle=core;X.fill();
+
+  // Shimmering revolving rays — actual light quality
+  var rayCount=16;
+  for(var r=0;r<rayCount;r++){
+    // Each ray rotates at slightly different speed — shimmer effect
+    var baseAngle=r/rayCount*Math.PI*2;
+    var wobble=Math.sin(T*1.8+r*1.3)*.12+Math.sin(T*.9+r*.7)*.08;
+    var angle=baseAngle+lightAngle*(1+r*.08)+wobble;
+    var rayLen=discR*(1.8+Math.sin(T*2.1+r*1.1)*.4+settle*.5);
+    var rayWidth=Math.max(.3,1.2+Math.sin(T*1.4+r)*.5);
+    var rayAlpha=(0.12+Math.sin(T*1.6+r*.9)*.06+settle*.12)*(r%2===0?1:.65);
+    if(rayAlpha<.02)continue;
     var rg=X.createLinearGradient(cx,cy,cx+Math.cos(angle)*rayLen,cy+Math.sin(angle)*rayLen);
-    rg.addColorStop(0,'rgba('+rgb+','+(0.08+settle*.10)+')');
+    rg.addColorStop(0,'rgba(255,255,245,'+rayAlpha+')');
+    rg.addColorStop(.3,'rgba('+rgb+','+(rayAlpha*.8)+')');
     rg.addColorStop(1,'rgba('+rgb+',0)');
-    X.beginPath();X.moveTo(cx,cy);X.lineTo(cx+Math.cos(angle)*rayLen,cy+Math.sin(angle)*rayLen);
-    X.strokeStyle=rg;X.lineWidth=Math.max(.5,2+settle*2);X.stroke();
+    X.beginPath();X.moveTo(cx,cy);
+    X.lineTo(cx+Math.cos(angle)*rayLen,cy+Math.sin(angle)*rayLen);
+    X.strokeStyle=rg;X.lineWidth=rayWidth;X.stroke();
   }
-  // The shaft — the cell-door light
-  var shaftW=Math.min(W,H)*.04+settle*.02;
-  var shaftH=Math.min(W,H)*.55;
-  var sg=X.createLinearGradient(cx,cy-shaftH*.5,cx,cy+shaftH*.5);
-  sg.addColorStop(0,'rgba('+rgb+',0)');
-  sg.addColorStop(.3,'rgba('+rgb+','+(0.18+settle*.22)+')');
-  sg.addColorStop(.7,'rgba('+rgb+','+(0.12+settle*.15)+')');
-  sg.addColorStop(1,'rgba('+rgb+',0)');
-  X.fillStyle=sg;X.fillRect(cx-shaftW,cy-shaftH*.5,shaftW*2,shaftH);
+
+  // Inner ring — edge of the disc
+  X.beginPath();X.arc(cx,cy,discR*.95,0,Math.PI*2);
+  X.strokeStyle='rgba(255,255,245,'+(0.35+settle*.40)+')';
+  X.lineWidth=1.5+settle*2;X.stroke();
+
+  // Nimitta ring — forms outside disc as settle increases
+  if(settle>.2){
+    X.beginPath();X.arc(cx,cy,discR*1.15,0,Math.PI*2);
+    X.strokeStyle='rgba('+rgb+','+(settle*.25)+')';
+    X.lineWidth=1;X.stroke();
+  }
 }
 
 function drawSpace(cx,cy,rgb){
@@ -785,20 +812,34 @@ function drawSpace(cx,cy,rgb){
 }
 
 function drawColour(cx,cy,rgb){
-  // Pure colour — full screen, breathing slowly
-  var pulse=Math.sin(T*.35)*.04;
-  var cg=X.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*(0.8+pulse));
-  cg.addColorStop(0,'rgba('+rgb+','+(0.45+settleLevel*.30)+')');
-  cg.addColorStop(.4,'rgba('+rgb+','+(0.22+settleLevel*.15)+')');
-  cg.addColorStop(.8,'rgba('+rgb+','+(0.08+settleLevel*.06)+')');
-  cg.addColorStop(1,'rgba('+rgb+',0)');
-  X.fillStyle=cg;X.fillRect(0,0,W,H);
-  // Subtle pulsing rings
-  for(var i=0;i<4;i++){
-    var cr=Math.min(W,H)*(.15+i*.18+Math.sin(T*.4+i)*.03);
-    X.beginPath();X.arc(cx,cy,cr,0,Math.PI*2);
-    X.strokeStyle='rgba('+rgb+','+(0.25-i*.05)+')';X.lineWidth=1.5-i*.3;X.stroke();
-  }
+  // Bounded disc — darkness around it so nimitta can form
+  var pulse=Math.sin(T*.3)*.025;
+  var discR=Math.min(W,H)*(.22+pulse+settleLevel*.04);
+
+  // Outer glow — bleeds into darkness
+  var glow=X.createRadialGradient(cx,cy,discR*.5,cx,cy,discR*2.2);
+  glow.addColorStop(0,'rgba('+rgb+','+(0.28+settleLevel*.15)+')');
+  glow.addColorStop(.4,'rgba('+rgb+','+(0.10+settleLevel*.06)+')');
+  glow.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=glow;X.fillRect(0,0,W,H);
+
+  // The disc itself — solid, saturated, bounded
+  var disc=X.createRadialGradient(cx,cy,0,cx,cy,discR);
+  disc.addColorStop(0,'rgba('+rgb+','+(0.95+settleLevel*.05)+')');
+  disc.addColorStop(.7,'rgba('+rgb+','+(0.85+settleLevel*.10)+')');
+  disc.addColorStop(.92,'rgba('+rgb+',.60)');
+  disc.addColorStop(1,'rgba('+rgb+',0)');
+  X.beginPath();X.arc(cx,cy,discR,0,Math.PI*2);X.fillStyle=disc;X.fill();
+
+  // Soft edge ring
+  X.beginPath();X.arc(cx,cy,discR*.98,0,Math.PI*2);
+  X.strokeStyle='rgba('+rgb+','+(0.55+settleLevel*.30)+')';
+  X.lineWidth=2+settleLevel*2;X.stroke();
+
+  // Second fainter ring — the beginning of the nimitta
+  X.beginPath();X.arc(cx,cy,discR*1.12,0,Math.PI*2);
+  X.strokeStyle='rgba('+rgb+','+(0.12+settleLevel*.18)+')';
+  X.lineWidth=1;X.stroke();
 }
 
 // ── BEGIN/END PRACTICE ──
@@ -807,7 +848,8 @@ function beginPractice(){
   returnCount=0;settleLevel=0;nimitta=false;nimittaT=0;T=0;
   practiceStartTime=Date.now();
   var rgb=k.rgb.split(',');
-  setBgTarget(parseInt(rgb[0]),parseInt(rgb[1]),parseInt(rgb[2]),1);
+  var bgStrength=curKey==='air'||curKey==='space'?0.3:1;
+  setBgTarget(parseInt(rgb[0]),parseInt(rgb[1]),parseInt(rgb[2]),bgStrength);
   document.getElementById('returnCount').textContent='0';
   document.getElementById('nimitta').classList.remove('arise');
   document.getElementById('timerDisplay').textContent='';
@@ -872,6 +914,20 @@ function endPractice(){
 }
 
 function startAgain(){showSetup(curKey);}
+function enterMenu(){
+  // Fade intro out then show home
+  var el=document.getElementById('introCanvas');
+  var btn=document.getElementById('introEnter');
+  btn.style.opacity='0';btn.style.pointerEvents='none';
+  el.style.transition='opacity .8s ease';
+  el.style.opacity='0';
+  setTimeout(function(){
+    iDone=true;
+    el.style.display='none';
+    document.getElementById('introEnter').style.display='none';
+    document.getElementById('s-home').classList.add('active');
+  },800);
+}
 function openInfo(){document.getElementById('infoPanel').style.transform='translateY(0)';}
 function closeInfo(){document.getElementById('infoPanel').style.transform='translateY(100%)';}
 </script>
