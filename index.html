@@ -337,18 +337,38 @@ function runIntro(){
     }
   });
 
-  // Show enter button after animation has fully bloomed
+  // Show enter button after bloom
   if(iT>2.5&&iT<2.6){
     var enterEl=document.getElementById('introEnter');
     enterEl.style.opacity='1';enterEl.style.pointerEvents='all';
   }
-  // Keep animation alive — cycle T to prevent drift but keep running
-  if(iT>100)iT=10; // reset to stable mid-point, keeps looping
+  // Auto fade after 7 seconds
+  if(iT>7){
+    var fadeOut=(iT-7)/1.5;
+    iX.fillStyle='rgba(6,6,10,'+Math.min(1,fadeOut)+')';
+    iX.fillRect(0,0,iW,iH);
+    if(fadeOut>=1){
+      iDone=true;
+      iC.style.display='none';
+      document.getElementById('introEnter').style.display='none';
+      document.getElementById('s-home').classList.add('active');
+    }
+  }
 }
 runIntro();
 
 // ── KASINAS ──
 var KASINAS={
+  allelements:{
+    name:'All Elements',pali:'Sabbā Dhātu',
+    color:'#f5f0e0',rgb:'245,240,224',
+    glyph:'✦',
+    instruction:'Rest attention on the unified field of all elements — earth, water, fire, air, space, light and colour arising together. No single object. The whole of experience as kasina. When the Visuddhimagga describes the mind fully absorbed, it describes this — not one element but the ground from which all elements arise.',
+    tradition:'While the Visuddhimagga describes ten distinct kasinas, the Abhidhamma teaches that the four great elements — earth, water, fire, air — are never found separately. Every phenomenon contains all four. This kasina takes that teaching as its object: the unified nature of all elements, inseparable, co-arising. It is not described in the Visuddhimagga because it cannot be prepared in advance. It arises when the other nine are known.',
+    modern:'You have sat with each element separately. Now sit with them together. Let the colours and movements arise without following any one of them. The whole field is the object. Stability in complexity is a deeper concentration than stability in simplicity.',
+    nimitta:'The counterpart sign of all elements unified is said to be like the full moon in a clear sky — all colours of the spectrum present in white light.',
+    complete:'All elements, one nature.'
+  },
   earth:{
     name:'Earth',pali:'Pathavī Kasina',
     color:'#c4956a',rgb:'196,149,106',
@@ -451,7 +471,7 @@ var KASINAS={
   }
 };
 
-var KASINA_ORDER=['earth','water','fire','air','blue','yellow','red','white','space','light'];
+var KASINA_ORDER=['earth','water','fire','air','blue','yellow','red','white','space','light','allelements'];
 
 // ── BUILD HOME GRID ──
 var grid=document.getElementById('kasinaGrid');
@@ -587,7 +607,7 @@ var fireParticles=[],mistP=[],waterRipples=[];
 
 function initKasinaParticles(){
   fireParticles=[];mistP=[];waterRipples=[];
-  if(curKey==='fire'||curKey==='earth'){
+  if(curKey==='allelements'||curKey==='fire'||curKey==='earth'){
     for(var i=0;i<60;i++)fireParticles.push({x:Math.random(),y:Math.random()*1.2+.2,vx:(Math.random()-.5)*.003,vy:-(Math.random()*.006+.002),life:Math.random(),r:Math.random()*3+1.5,a:Math.random()*.6+.2});
   }
   if(curKey==='air'||curKey==='space'||curKey==='water'){
@@ -614,7 +634,9 @@ function drawKasina(){
     X.fillStyle=wash;X.fillRect(0,0,W,H);
   }
 
-  if(curKey==='fire'){
+  if(curKey==='allelements'){
+    drawAllElements(cx,cy);
+  } else if(curKey==='fire'){
     drawFire(cx,cy,rgb);
   } else if(curKey==='water'){
     drawWater(cx,cy,rgb);
@@ -643,26 +665,141 @@ function drawKasina(){
 }
 
 // ── KASINA VISUALS ──
-function drawFire(cx,cy,rgb){
-  var baseR=Math.min(W,H)*.22;
-  // Core flame glow
-  var flicker=Math.sin(T*3.1)*.08+Math.sin(T*5.7)*.05;
-  var fg=X.createRadialGradient(cx,cy+baseR*.2,0,cx,cy,baseR*(1.4+flicker));
-  fg.addColorStop(0,'rgba('+rgb+',.55)');
-  fg.addColorStop(.3,'rgba('+rgb+',.28)');
-  fg.addColorStop(.7,'rgba('+rgb+',.08)');
-  fg.addColorStop(1,'rgba('+rgb+',0)');
-  X.fillStyle=fg;X.fillRect(0,0,W,H);
-  // Rising particles
+function drawAllElements(cx,cy){
+  var ALL=[
+    {r:'196,149,106',speed:0.6,dist:0.55,size:1.4},
+    {r:'90,181,212',speed:0.45,dist:0.70,size:1.2},
+    {r:'244,162,97',speed:0.8,dist:0.45,size:1.6},
+    {r:'168,216,234',speed:0.35,dist:0.80,size:1.0},
+    {r:'74,144,196',speed:0.55,dist:0.60,size:1.3},
+    {r:'244,208,63',speed:0.70,dist:0.50,size:1.5},
+    {r:'231,76,60',speed:0.65,dist:0.65,size:1.1},
+    {r:'221,216,204',speed:0.40,dist:0.75,size:1.2},
+    {r:'142,154,175',speed:0.30,dist:0.85,size:0.9},
+    {r:'245,240,224',speed:0.50,dist:0.40,size:1.8}
+  ];
+  var maxR=Math.min(W,H)*.48;
+
+  // Colour cycling core — much brighter than intro
+  var ci=Math.floor(T*1.4)%ALL.length;
+  var cn=(ci+1)%ALL.length;
+  var blend=(T*1.4)%1;
+  var c1=ALL[ci].r.split(','),c2=ALL[cn].r.split(',');
+  var cr=Math.round(parseInt(c1[0])+(parseInt(c2[0])-parseInt(c1[0]))*blend);
+  var cg2=Math.round(parseInt(c1[1])+(parseInt(c2[1])-parseInt(c1[1]))*blend);
+  var cb=Math.round(parseInt(c1[2])+(parseInt(c2[2])-parseInt(c1[2]))*blend);
+
+  // Massive glow layers — fills the whole screen
+  for(var gi=0;gi<7;gi++){
+    var gr=maxR*(0.8+gi*.45);
+    var ga=(0.22-gi*.026)*(0.7+settleLevel*.3);
+    if(ga<.003)continue;
+    var gg=X.createRadialGradient(cx,cy,0,cx,cy,gr);
+    gg.addColorStop(0,'rgba('+cr+','+cg2+','+cb+','+ga+')');
+    gg.addColorStop(1,'rgba('+cr+','+cg2+','+cb+',0)');
+    X.fillStyle=gg;X.fillRect(0,0,W,H);
+  }
+
+  // Bright core
+  var coreG=X.createRadialGradient(cx,cy,0,cx,cy,maxR*.25);
+  coreG.addColorStop(0,'rgba(255,252,240,.98)');
+  coreG.addColorStop(.3,'rgba('+cr+','+cg2+','+cb+',.85)');
+  coreG.addColorStop(1,'rgba('+cr+','+cg2+','+cb+',0)');
+  X.fillStyle=coreG;X.fillRect(0,0,W,H);
+
+  // Large rays — 16, irregular lengths
+  for(var ri=0;ri<16;ri++){
+    var rAngle=ri/16*Math.PI*2+T*.12;
+    var rLen=maxR*(1.1+Math.sin(T*1.8+ri*1.1)*.28+Math.sin(T*.9+ri*.7)*.15);
+    var rg=X.createLinearGradient(cx,cy,cx+Math.cos(rAngle)*rLen,cy+Math.sin(rAngle)*rLen);
+    var ra=(0.28+Math.sin(T*1.4+ri)*.08)*(0.7+settleLevel*.3);
+    rg.addColorStop(0,'rgba('+cr+','+cg2+','+cb+','+ra+')');
+    rg.addColorStop(.4,'rgba('+cr+','+cg2+','+cb+','+(ra*.5)+')');
+    rg.addColorStop(1,'rgba('+cr+','+cg2+','+cb+',0)');
+    X.beginPath();X.moveTo(cx,cy);X.lineTo(cx+Math.cos(rAngle)*rLen,cy+Math.sin(rAngle)*rLen);
+    X.strokeStyle=rg;X.lineWidth=Math.max(1,3.5+Math.sin(T+ri)*1.5);X.stroke();
+  }
+
+  // Large particles — all element colours, much bigger than intro
   fireParticles.forEach(function(p){
-    p.life+=.015;p.y+=p.vy;p.x+=p.vx+Math.sin(p.life*4+p.x*10)*.001;
-    if(p.life>1||p.y<-0.1){p.life=0;p.y=0.5+Math.random()*.3;p.x=0.4+Math.random()*.2;}
+    p.life+=.008;p.angle=(p.angle||Math.random()*Math.PI*2)+p.vx*.5;
+    p.dist2=(p.dist2||(.2+Math.random()*.7));
+    if(p.life>1){p.life=0;p.dist2=.15+Math.random()*.75;p.angle=Math.random()*Math.PI*2;}
     var fade=Math.sin(p.life*Math.PI);
-    var px=cx+(p.x-.5)*Math.min(W,H)*.35,py=cy+(p.y-.3)*H*.5;
-    for(var b=0;b<4;b++){var br=p.r*(1+b*1.1);var ba=fade*p.a*(0.5-b*.10);if(ba<.01)continue;X.beginPath();X.arc(px,py,br,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+ba.toFixed(3)+')';X.fill();}
+    var col=ALL[Math.floor(p.x*ALL.length)%ALL.length].r;
+    var pr=maxR*p.dist2;
+    var px=cx+Math.cos(p.angle)*pr,py=cy+Math.sin(p.angle)*pr*.85;
+    var sz=p.r*(2.5+p.dist2*2);
+    for(var b=0;b<5;b++){
+      var br=sz*(1+b*1.2);
+      var ba=fade*p.a*(0.55-b*.09);
+      if(ba<.006)continue;
+      X.beginPath();X.arc(px,py,br,0,Math.PI*2);
+      X.fillStyle='rgba('+col+','+ba.toFixed(3)+')';X.fill();
+    }
   });
-  // Flame rings
-  for(var i=0;i<3;i++){var fr=baseR*(1+i*.3)+Math.sin(T*2+i)*6;X.beginPath();X.ellipse(cx,cy+baseR*.15,fr*.7,fr,0,0,Math.PI*2);X.strokeStyle='rgba('+rgb+','+(0.35-i*.10)+')';X.lineWidth=2-i*.5;X.stroke();}
+
+  // Orbit rings — water element, multiple sizes
+  for(var wi=0;wi<5;wi++){
+    var wr=maxR*(.35+wi*.18)+Math.sin(T*1.2+wi)*maxR*.04;
+    X.beginPath();X.arc(cx,cy,wr,0,Math.PI*2);
+    X.strokeStyle='rgba('+cr+','+cg2+','+cb+','+(0.18-wi*.03)*(0.6+settleLevel*.3)+')';
+    X.lineWidth=1.5-wi*.25;X.stroke();
+  }
+}
+
+function drawFire(cx,cy,rgb){
+  var baseH=Math.min(W,H)*.38;
+  var baseW=baseH*.38;
+  var flickX=Math.sin(T*3.7)*.018+Math.sin(T*6.1)*.010;
+  var flickY=Math.sin(T*2.9)*.025+Math.sin(T*5.3)*.012;
+
+  // Draw flame using bezier path — organic teardrop shape
+  function flamePath(scale,xOff){
+    var fw=baseW*scale,fh=baseH*scale;
+    var bx=cx+xOff,by=cy+fh*.35;
+    X.beginPath();
+    X.moveTo(bx,by+fh*.12);
+    X.bezierCurveTo(bx-fw*.55,by+fh*.05,bx-fw*.7,by-fh*.3,bx+fw*flickX,by-fh*.55);
+    X.bezierCurveTo(bx+fw*.05,by-fh*.9+flickY*fh,bx+fw*.02,by-fh,bx,by-fh);
+    X.bezierCurveTo(bx-fw*.02,by-fh,bx-fw*.05,by-fh*.9+flickY*fh,bx-fw*flickX,by-fh*.55);
+    X.bezierCurveTo(bx+fw*.7,by-fh*.3,bx+fw*.55,by+fh*.05,bx,by+fh*.12);
+    X.closePath();
+  }
+
+  // Outer amber glow
+  flamePath(1.4,flickX*8);
+  var og=X.createRadialGradient(cx,cy,0,cx,cy-baseH*.3,baseH*1.2);
+  og.addColorStop(0,'rgba(244,162,97,.35)');og.addColorStop(.5,'rgba(244,162,97,.12)');og.addColorStop(1,'rgba(244,162,97,0)');
+  X.fillStyle=og;X.fill();
+
+  // Mid orange
+  flamePath(1.0,flickX*5);
+  var mg=X.createRadialGradient(cx,cy+baseH*.1,0,cx,cy-baseH*.4,baseH);
+  mg.addColorStop(0,'rgba(255,180,60,.85)');mg.addColorStop(.4,'rgba(244,162,97,.70)');mg.addColorStop(.8,'rgba(180,80,20,.35)');mg.addColorStop(1,'rgba(180,80,20,0)');
+  X.fillStyle=mg;X.fill();
+
+  // Inner hot — yellow-white
+  flamePath(0.55,flickX*2);
+  var ig=X.createRadialGradient(cx,cy,0,cx,cy-baseH*.55,baseH*.55);
+  ig.addColorStop(0,'rgba(255,255,220,.98)');ig.addColorStop(.25,'rgba(255,240,140,.90)');ig.addColorStop(.6,'rgba(255,180,60,.60)');ig.addColorStop(1,'rgba(255,120,20,0)');
+  X.fillStyle=ig;X.fill();
+
+  // Core white — hottest point
+  flamePath(0.22,flickX);
+  var cg=X.createRadialGradient(cx,cy-baseH*.05,0,cx,cy-baseH*.1,baseH*.22);
+  cg.addColorStop(0,'rgba(255,255,255,1)');cg.addColorStop(.5,'rgba(255,255,220,.85)');cg.addColorStop(1,'rgba(255,220,100,0)');
+  X.fillStyle=cg;X.fill();
+
+  // Rising spark particles
+  fireParticles.forEach(function(p){
+    p.life+=.018;p.y+=p.vy*1.2;p.x+=p.vx+Math.sin(p.life*5+p.x*8)*.0008;
+    if(p.life>1||p.y<-0.15){p.life=0;p.y=0.48+Math.random()*.08;p.x=0.46+Math.random()*.08;}
+    var fade=p.life<.3?p.life/.3:Math.max(0,1-(p.life-.3)/.7);
+    var px=cx+(p.x-.5)*baseW*2.5,py=cy+(p.y-.38)*H*.55;
+    var bright=p.life<.4?'255,255,200':'244,162,97';
+    for(var b=0;b<3;b++){var br=p.r*(.5+b*.6);var ba=fade*p.a*(0.55-b*.15);if(ba<.008)continue;X.beginPath();X.arc(px,py,br,0,Math.PI*2);X.fillStyle='rgba('+bright+','+ba.toFixed(3)+')';X.fill();}
+  });
 }
 
 function drawWater(cx,cy,rgb){
@@ -749,96 +886,85 @@ function drawAir(cx,cy,rgb){
 
 function drawLight(cx,cy,rgb){
   var settle=settleLevel;
-  var pulse=Math.sin(T*.5)*.05+Math.sin(T*1.3)*.03;
-  var discR=Math.min(W,H)*(.18+pulse+settle*.06);
+  // Pure darkness — no background wash at all
+  // Just the light itself against black
 
-  // Deep outer glow — light bleeding into darkness
-  for(var gi=6;gi>=0;gi--){
-    var gr=discR*(1.2+gi*.5);
-    var ga=(0.14-gi*.018)*(0.5+settle*.5);
-    if(ga<.003)continue;
-    var gg=X.createRadialGradient(cx,cy,0,cx,cy,gr);
-    gg.addColorStop(0,'rgba('+rgb+','+ga+')');
-    gg.addColorStop(1,'rgba('+rgb+',0)');
-    X.fillStyle=gg;X.fillRect(0,0,W,H);
-  }
+  var coreR=Math.min(W,H)*(.055+settle*.025);
 
-  // The circle of light — like sunlight through a hole, toilet-roll focused
-  var core=X.createRadialGradient(cx,cy,0,cx,cy,discR);
-  core.addColorStop(0,'rgba(255,255,245,'+(0.98+settle*.02)+')'); // pure white-gold centre
-  core.addColorStop(.25,'rgba('+rgb+','+(0.90+settle*.08)+')');
-  core.addColorStop(.75,'rgba('+rgb+','+(0.65+settle*.20)+')');
-  core.addColorStop(.92,'rgba('+rgb+',.30)');
-  core.addColorStop(1,'rgba('+rgb+',0)');
-  X.beginPath();X.arc(cx,cy,discR,0,Math.PI*2);X.fillStyle=core;X.fill();
+  // Tight core glow — small, intense
+  var core=X.createRadialGradient(cx,cy,0,cx,cy,coreR*3.5);
+  core.addColorStop(0,'rgba(255,255,250,1)');
+  core.addColorStop(.2,'rgba(255,255,220,.95)');
+  core.addColorStop(.5,'rgba(255,240,160,.60)');
+  core.addColorStop(.8,'rgba(245,210,120,.20)');
+  core.addColorStop(1,'rgba(245,200,100,0)');
+  X.fillStyle=core;X.fillRect(0,0,W,H);
 
-  // Shimmering revolving rays — actual light quality
-  var rayCount=16;
-  for(var r=0;r<rayCount;r++){
-    // Each ray rotates at slightly different speed — shimmer effect
-    var baseAngle=r/rayCount*Math.PI*2;
-    var wobble=Math.sin(T*1.8+r*1.3)*.12+Math.sin(T*.9+r*.7)*.08;
-    var angle=baseAngle+lightAngle*(1+r*.08)+wobble;
-    var rayLen=discR*(1.8+Math.sin(T*2.1+r*1.1)*.4+settle*.5);
-    var rayWidth=Math.max(.3,1.2+Math.sin(T*1.4+r)*.5);
-    var rayAlpha=(0.12+Math.sin(T*1.6+r*.9)*.06+settle*.12)*(r%2===0?1:.65);
-    if(rayAlpha<.02)continue;
-    var rg=X.createLinearGradient(cx,cy,cx+Math.cos(angle)*rayLen,cy+Math.sin(angle)*rayLen);
-    rg.addColorStop(0,'rgba(255,255,245,'+rayAlpha+')');
-    rg.addColorStop(.3,'rgba('+rgb+','+(rayAlpha*.8)+')');
-    rg.addColorStop(1,'rgba('+rgb+',0)');
-    X.beginPath();X.moveTo(cx,cy);
-    X.lineTo(cx+Math.cos(angle)*rayLen,cy+Math.sin(angle)*rayLen);
-    X.strokeStyle=rg;X.lineWidth=rayWidth;X.stroke();
-  }
+  // Irregular starburst rays — each unique length and brightness
+  // No perfect symmetry — like real light through an aperture
+  var RAY_DATA=[
+    {a:0.0,  len:2.8,w:2.2,b:0.75},{a:0.4,  len:1.2,w:0.8,b:0.35},
+    {a:0.78, len:3.5,w:2.8,b:0.85},{a:1.1,  len:0.9,w:0.5,b:0.25},
+    {a:1.57, len:2.2,w:1.8,b:0.65},{a:1.9,  len:1.5,w:0.7,b:0.40},
+    {a:2.35, len:3.8,w:3.0,b:0.90},{a:2.7,  len:0.8,w:0.4,b:0.20},
+    {a:3.14, len:2.5,w:2.0,b:0.70},{a:3.5,  len:1.1,w:0.6,b:0.30},
+    {a:3.93, len:3.2,w:2.5,b:0.80},{a:4.3,  len:1.0,w:0.5,b:0.28},
+    {a:4.71, len:2.0,w:1.6,b:0.60},{a:5.1,  len:1.4,w:0.7,b:0.38},
+    {a:5.50, len:3.0,w:2.3,b:0.72},{a:5.9,  len:0.7,w:0.4,b:0.18}
+  ];
 
-  // Inner ring — edge of the disc
-  X.beginPath();X.arc(cx,cy,discR*.95,0,Math.PI*2);
-  X.strokeStyle='rgba(255,255,245,'+(0.35+settle*.40)+')';
-  X.lineWidth=1.5+settle*2;X.stroke();
+  RAY_DATA.forEach(function(rd,i){
+    // Each ray shimmers independently at different rates
+    var shimmer=Math.sin(T*(1.2+i*.18)+i*0.9)*.22+Math.sin(T*(2.1+i*.11))*.12;
+    var angle=rd.a+lightAngle*(0.8+i*.025)+shimmer*.08;
+    var len=coreR*(rd.len*(2.5+settle*1.5))*(1+shimmer*.18);
+    var alpha=rd.b*(0.6+settle*.35)*(0.85+shimmer*.15);
+    if(alpha<.02)return;
+    var ex=cx+Math.cos(angle)*len,ey=cy+Math.sin(angle)*len;
+    var rg=X.createLinearGradient(cx,cy,ex,ey);
+    rg.addColorStop(0,'rgba(255,255,240,'+alpha+')');
+    rg.addColorStop(.15,'rgba(255,240,180,'+(alpha*.85)+')');
+    rg.addColorStop(.45,'rgba(245,210,120,'+(alpha*.45)+')');
+    rg.addColorStop(1,'rgba(245,200,100,0)');
+    X.beginPath();X.moveTo(cx,cy);X.lineTo(ex,ey);
+    X.strokeStyle=rg;X.lineWidth=rd.w*(0.7+shimmer*.3);X.stroke();
+  });
 
-  // Nimitta ring — forms outside disc as settle increases
-  if(settle>.2){
-    X.beginPath();X.arc(cx,cy,discR*1.15,0,Math.PI*2);
-    X.strokeStyle='rgba('+rgb+','+(settle*.25)+')';
+  // Very faint secondary halo — just barely visible
+  if(settle>.1){
+    var haloR=coreR*(8+settle*4);
+    X.beginPath();X.arc(cx,cy,haloR,0,Math.PI*2);
+    X.strokeStyle='rgba(255,240,180,'+(settle*.08)+')';
     X.lineWidth=1;X.stroke();
   }
 }
 
 function drawSpace(cx,cy,rgb){
-  // Centre aperture — the hole, the point of reference
-  var aR=Math.min(W,H)*(.05+settleLevel*.03);
-  var ag=X.createRadialGradient(cx,cy,0,cx,cy,aR*3);
-  ag.addColorStop(0,'rgba('+rgb+','+(0.65+settleLevel*.30)+')');
-  ag.addColorStop(.3,'rgba('+rgb+','+(0.22+settleLevel*.12)+')');
-  ag.addColorStop(1,'rgba('+rgb+',0)');
-  X.fillStyle=ag;X.fillRect(0,0,W,H);
-  X.beginPath();X.arc(cx,cy,aR,0,Math.PI*2);
-  var coreG=X.createRadialGradient(cx,cy,0,cx,cy,aR);
-  coreG.addColorStop(0,'rgba(232,228,220,.85)');
-  coreG.addColorStop(1,'rgba('+rgb+',.20)');
-  X.fillStyle=coreG;X.fill();
+  // Near total darkness — space IS the object, not something in it
 
-  // Deep space — occasional distant phenomena drifting through vast darkness
+  // Distant star points — appear, hold, dissolve slowly
   mistP.forEach(function(p){
-    p.life+=p.ls*.4;p.x+=p.vx*.2;p.y+=p.vy*.2;
-    if(p.life>1){p.life=0;p.x=(Math.random()*2-1)*.95;p.y=(Math.random()*2-1)*.95;}
+    p.life+=p.ls*.25;p.x+=p.vx*.15;p.y+=p.vy*.15;
+    if(p.life>1){p.life=0;p.x=(Math.random()*2-1)*.92;p.y=(Math.random()*2-1)*.92;}
     var fade=Math.sin(p.life*Math.PI);
-    var px=cx+p.x*W*.48,py=cy+p.y*H*.48;
-    // Only render if not too close to centre — space around the object
-    var dist=Math.sqrt((px-cx)*(px-cx)+(py-cy)*(py-cy));
-    if(dist<aR*2.5)return;
-    X.beginPath();X.arc(px,py,p.r*.45,0,Math.PI*2);
-    X.fillStyle='rgba('+rgb+','+(fade*p.a*.22).toFixed(3)+')';X.fill();
+    var px=cx+p.x*W*.46,py=cy+p.y*H*.46;
+    var a=fade*p.a*.18;if(a<.005)return;
+    X.beginPath();X.arc(px,py,p.r*.35,0,Math.PI*2);
+    X.fillStyle='rgba('+rgb+','+a.toFixed(3)+')';X.fill();
+    // Occasional slightly brighter star
+    if(p.a>.7){
+      X.beginPath();X.arc(px,py,p.r*.12,0,Math.PI*2);
+      X.fillStyle='rgba(232,228,220,'+(fade*p.a*.45).toFixed(3)+')';X.fill();
+    }
   });
 
-  // Occasional nebula-like wisps very far from centre
-  for(var ni=0;ni<3;ni++){
-    var na=Math.sin(T*.08+ni*2.1+lightAngle)*.018+.010;
-    if(na<.005)continue;
-    var nx=cx+Math.cos(lightAngle*.3+ni*2.1)*W*.32;
-    var ny=cy+Math.sin(lightAngle*.2+ni*1.7)*H*.28;
-    var nr=Math.min(W,H)*(.08+Math.sin(T*.15+ni)*.03);
+  // Very faint nebula wisps — barely perceptible depth
+  for(var ni=0;ni<4;ni++){
+    var na=Math.sin(T*.06+ni*1.8)*.008+.006;
+    if(na<.003)continue;
+    var nx=cx+Math.cos(lightAngle*.15+ni*1.57)*W*.28;
+    var ny=cy+Math.sin(lightAngle*.12+ni*1.57)*H*.24;
+    var nr=Math.min(W,H)*(.12+Math.sin(T*.10+ni)*.04);
     var ng=X.createRadialGradient(nx,ny,0,nx,ny,nr);
     ng.addColorStop(0,'rgba('+rgb+','+na+')');ng.addColorStop(1,'rgba('+rgb+',0)');
     X.fillStyle=ng;X.fillRect(0,0,W,H);
@@ -877,7 +1003,7 @@ function drawColour(cx,cy,rgb){
 }
 
 // ── BEGIN/END PRACTICE ──
-function beginPractice(){
+window.beginPractice=function beginPractice(){
   var k=KASINAS[curKey];
   returnCount=0;settleLevel=0;nimitta=false;nimittaT=0;T=0;
   practiceStartTime=Date.now();
