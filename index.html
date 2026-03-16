@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <title>Kasina</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;600&family=Syne:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --bg:#06060a;--text:#e8e4dc;--dim:rgba(232,228,220,.48);
+      --border:rgba(255,255,255,.08);--surface:rgba(255,255,255,.05);
+      --serif:'Outfit',system-ui,sans-serif;--sans:'Syne',system-ui,sans-serif;
+    }
+    html,body{height:100%;background:var(--bg);color:var(--text);
+      font-family:var(--serif);overflow:hidden;-webkit-font-smoothing:antialiased}
+
+    #mainCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+
+    .screen{position:fixed;inset:0;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      padding:max(env(safe-area-inset-top),24px) 28px max(env(safe-area-inset-bottom),24px);
+      opacity:0;pointer-events:none;transition:opacity .6s ease;z-index:10;overflow-y:auto}
+    .screen.active{opacity:1;pointer-events:all}
+
+    /* HOME */
+    #s-home{justify-content:center;gap:8px}
+    .home-title{font-family:var(--sans);font-weight:600;
+      font-size:clamp(48px,14vw,76px);letter-spacing:.14em;text-transform:uppercase;
+      text-align:center;color:var(--text)}
+    .home-sub{font-size:clamp(13px,3.2vw,16px);font-weight:300;color:var(--dim);
+      text-align:center;letter-spacing:.14em;text-transform:lowercase;margin-bottom:48px}
+    .kasina-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;
+      width:100%;max-width:360px}
+    .k-card{padding:18px 16px;border-radius:16px;border:1px solid var(--border);
+      background:var(--surface);cursor:pointer;-webkit-tap-highlight-color:transparent;
+      display:flex;align-items:center;gap:12px;
+      transition:border-color .3s,background .3s}
+    .k-card:active{background:rgba(255,255,255,.09)}
+    .k-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .k-name{font-size:clamp(16px,4vw,18px);font-weight:400;color:var(--text)}
+    .k-pali{font-size:clamp(11px,2.8vw,12px);color:var(--dim);font-weight:300;margin-top:2px;font-style:italic}
+
+    /* SETUP */
+    #s-setup{gap:20px;padding-top:60px;justify-content:flex-start;overflow-y:auto}
+    .setup-inner{width:100%;max-width:400px;display:flex;flex-direction:column;gap:20px;padding-bottom:40px}
+    .setup-name{font-family:var(--sans);font-size:clamp(28px,7vw,38px);font-weight:600;letter-spacing:.06em}
+    .setup-pali{font-size:clamp(13px,3.2vw,15px);color:var(--dim);font-style:italic;font-weight:300;margin-top:-12px}
+    .setup-instruction{font-size:clamp(15px,3.8vw,17px);font-weight:300;color:var(--dim);line-height:1.85}
+    .setup-tradition{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px}
+    .setup-trad-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:400;margin-bottom:8px}
+    .setup-trad-text{font-size:clamp(13px,3.2vw,15px);font-weight:300;color:var(--dim);line-height:1.80;font-style:italic}
+    .timer-row{display:flex;flex-direction:column;gap:10px}
+    .timer-label{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:400}
+    .timer-options{display:flex;gap:8px;flex-wrap:wrap}
+    .timer-btn{padding:10px 18px;border-radius:999px;border:1px solid var(--border);
+      background:var(--surface);font-family:var(--serif);font-size:clamp(14px,3.5vw,16px);
+      font-weight:300;color:var(--dim);cursor:pointer;-webkit-tap-highlight-color:transparent;
+      transition:border-color .2s,color .2s,background .2s}
+    .timer-btn.active{color:var(--text);background:rgba(255,255,255,.10)}
+    .begin-btn{width:100%;padding:20px;border-radius:16px;border:1px solid rgba(255,255,255,.15);
+      background:rgba(255,255,255,.06);font-family:var(--serif);
+      font-size:clamp(17px,4.2vw,20px);font-weight:300;
+      color:var(--text);cursor:pointer;-webkit-tap-highlight-color:transparent;
+      letter-spacing:.08em;transition:background .2s,border-color .2s}
+    .begin-btn:active{background:rgba(255,255,255,.12)}
+
+    /* PRACTICE — total darkness */
+    #s-practice{background:transparent;padding:0}
+
+    /* Minimal floating UI */
+    #practiceUI{position:fixed;inset:0;z-index:30;pointer-events:none;opacity:0;transition:opacity .5s}
+    #practiceUI.show{opacity:1;pointer-events:all}
+
+    #timerDisplay{position:fixed;top:max(env(safe-area-inset-top),20px);left:50%;
+      transform:translateX(-50%);font-family:var(--sans);font-size:14px;
+      font-weight:300;letter-spacing:.18em;color:rgba(232,228,220,.22);
+      pointer-events:none;transition:color .5s}
+
+    #returnCounter{position:fixed;bottom:max(env(safe-area-inset-bottom),36px);
+      left:50%;transform:translateX(-50%);
+      display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:all}
+    #returnBtn{background:none;border:none;cursor:pointer;
+      -webkit-tap-highlight-color:transparent;padding:20px;
+      display:flex;flex-direction:column;align-items:center;gap:6px}
+    #returnCount{font-family:var(--sans);font-size:clamp(32px,8vw,44px);font-weight:200;
+      color:rgba(232,228,220,.18);transition:color .4s,transform .2s;letter-spacing:.04em}
+    #returnCount.flash{color:rgba(232,228,220,.55);transform:scale(1.15)}
+    #returnLabel{font-size:11px;letter-spacing:.20em;text-transform:uppercase;
+      color:rgba(232,228,220,.15);font-weight:300}
+
+    #practiceEnd{position:fixed;bottom:max(env(safe-area-inset-bottom),36px);
+      right:24px;background:none;border:none;cursor:pointer;
+      font-family:var(--serif);font-size:12px;letter-spacing:.14em;
+      color:rgba(232,228,220,.15);-webkit-tap-highlight-color:transparent;padding:12px}
+
+    /* Nimitta indicator */
+    #nimitta{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+      font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+      color:rgba(232,228,220,.0);pointer-events:none;
+      transition:color 3s ease,opacity 3s ease;z-index:40;
+      font-family:var(--sans);font-weight:300}
+    #nimitta.arise{color:rgba(232,228,220,.28)}
+
+    /* COMPLETE */
+    #s-complete{gap:24px}
+    .complete-glyph{font-size:48px}
+    .complete-title{font-family:var(--sans);font-size:clamp(26px,6.5vw,34px);
+      font-weight:600;text-align:center;letter-spacing:.08em}
+    .complete-stats{display:flex;gap:32px;justify-content:center}
+    .stat{display:flex;flex-direction:column;align-items:center;gap:4px}
+    .stat-num{font-family:var(--sans);font-size:clamp(28px,7vw,36px);font-weight:200;color:var(--text)}
+    .stat-label{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);font-weight:300}
+    .complete-quote{font-size:clamp(14px,3.5vw,16px);font-weight:300;color:var(--dim);
+      text-align:center;max-width:300px;line-height:1.85;font-style:italic}
+    .complete-btns{display:flex;flex-direction:column;gap:12px;width:100%;max-width:300px;margin-top:8px}
+    .complete-btn{padding:16px;border-radius:14px;border:1px solid var(--border);
+      background:var(--surface);font-family:var(--serif);
+      font-size:clamp(15px,3.8vw,17px);font-weight:300;
+      color:var(--text);cursor:pointer;-webkit-tap-highlight-color:transparent}
+
+    /* NAV */
+    #topBack{position:fixed;top:max(env(safe-area-inset-top),16px);left:16px;
+      z-index:200;background:none;border:none;cursor:pointer;
+      color:rgba(232,228,220,.30);font-size:22px;padding:8px;
+      -webkit-tap-highlight-color:transparent;display:none}
+
+    /* Colour picker */
+    #colorSection{display:flex;flex-direction:column;gap:10px}
+    .color-label{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:400}
+    .color-swatches{display:flex;gap:10px;flex-wrap:wrap}
+    .swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;
+      border:2px solid transparent;-webkit-tap-highlight-color:transparent;
+      transition:transform .2s,border-color .2s}
+    .swatch.active{border-color:rgba(255,255,255,.6);transform:scale(1.2)}
+
+    .fade-in{animation:fadeUp .4s ease forwards}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body>
+<canvas id="mainCanvas"></canvas>
+
+<button id="topBack" onclick="goHome()">←</button>
+
+<!-- HOME -->
+<div class="screen active" id="s-home">
+  <div class="home-title">Kasina</div>
+  <div class="home-sub">the ten objects of pure concentration</div>
+  <div class="kasina-grid" id="kasinaGrid"></div>
+</div>
+
+<!-- SETUP -->
+<div class="screen" id="s-setup">
+  <div class="setup-inner" id="setupInner"></div>
+</div>
+
+<!-- PRACTICE -->
+<div class="screen" id="s-practice"></div>
+
+<div id="practiceUI">
+  <div id="timerDisplay"></div>
+  <div id="nimitta">nimitta</div>
+  <div id="returnCounter">
+    <button id="returnBtn" onclick="logReturn()">
+      <div id="returnCount">0</div>
+      <div id="returnLabel">returns</div>
+    </button>
+  </div>
+  <button id="practiceEnd" onclick="endPractice()">end</button>
+</div>
+
+<!-- COMPLETE -->
+<div class="screen" id="s-complete">
+  <div class="complete-glyph" id="cGlyph"></div>
+  <div class="complete-title" id="cTitle"></div>
+  <div class="complete-stats">
+    <div class="stat"><div class="stat-num" id="cTime">0</div><div class="stat-label">minutes</div></div>
+    <div class="stat"><div class="stat-num" id="cReturns">0</div><div class="stat-label">returns</div></div>
+  </div>
+  <div class="complete-quote" id="cQuote"></div>
+  <div class="complete-btns">
+    <button class="complete-btn" onclick="startAgain()">Sit again</button>
+    <button class="complete-btn" onclick="goHome()">Choose another kasina</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── CANVAS ──
+var C=document.getElementById('mainCanvas'),X=C.getContext('2d');
+var W,H;
+function resizeC(){var d=devicePixelRatio||1;W=innerWidth;H=innerHeight;C.width=W*d;C.height=H*d;C.style.width=W+'px';C.style.height=H+'px';X.setTransform(1,0,0,1,0,0);X.scale(d,d);}
+window.addEventListener('resize',resizeC);resizeC();
+
+// ── KASINAS ──
+var KASINAS={
+  earth:{
+    name:'Earth',pali:'Pathavī Kasina',
+    color:'#c4956a',rgb:'196,149,106',
+    glyph:'◉',
+    instruction:'Rest your gaze on the earth element. Dense, present, unmoving. Notice the quality of solidity — not just below you, but within you. You are earth too.',
+    tradition:'The Visuddhimagga instructs: prepare a clay disc the colour of the dawn — perfectly round, smooth, free of blemishes. Fix attention upon it with the word "earth, earth." When the mind wanders, return without harshness. The earth does not judge the rain.',
+    modern:'Find any solid surface — floor, wall, the ground itself. Let it hold you. You need not do anything. The earth has been here before thought and will remain after it.',
+    nimitta:'The acquired sign appears like a polished mirror, still and bright. The counterpart sign is like the full moon emerging from cloud.',
+    complete:'The earth does not move. Stillness is its teaching.'
+  },
+  water:{
+    name:'Water',pali:'Āpo Kasina',
+    color:'#5ab5d4',rgb:'90,181,212',
+    glyph:'◎',
+    instruction:'Observe the water element. Fluid, yielding, cohesive. Water does not resist — it finds its level. Let attention rest on the quality of fluidity itself.',
+    tradition:'The Visuddhimagga instructs: observe clear water in a bowl or natural body of water — not the container, not the ripples, but the clear water itself. Attend to the sign of water until the mind-image arises clear and still.',
+    modern:'Watch the ripples arise and pass. The centre is always still. That stillness is always available.',
+    nimitta:'The acquired sign appears like the moving surface of water. The counterpart sign is still and perfectly clear, like a crystal sphere.',
+    complete:'Water yields to everything and is changed by nothing.'
+  },
+  fire:{
+    name:'Fire',pali:'Tejo Kasina',
+    color:'#f4a261',rgb:'244,162,97',
+    glyph:'◈',
+    instruction:'Fix attention on the fire element. Consuming, transforming, luminous. The flame takes what is given and releases it as light and heat. Watch how attention itself is like fire — it illuminates whatever it touches.',
+    tradition:'The Visuddhimagga instructs: make a fire and observe the flame through a hole in a mat or cloth — so only the flame is visible, not its surroundings. This is the original kasina — focusing light through darkness. The sign that arises is first the flame, then the mental image of flame, then pure luminosity.',
+    modern:'Any flame will do. A candle, a match, this screen. Soften your gaze. Let the flame come to you rather than reaching toward it. You are not staring — you are receiving.',
+    nimitta:'The acquired sign flickers like the flame itself. The counterpart sign is unwavering — pure light without fuel or heat.',
+    complete:'What burns away is not lost. It becomes light.'
+  },
+  air:{
+    name:'Air',pali:'Vāyo Kasina',
+    color:'#a8d8ea',rgb:'168,216,234',
+    glyph:'◌',
+    instruction:'Rest attention on the air element. Moving, invisible, life-giving. Notice breath as wind — the most intimate meeting with the air element. It enters, it leaves. You are briefly its home.',
+    tradition:'The Visuddhimagga instructs: observe wind moving in the tops of trees, or feel the movement of air on skin. The kasina object here is movement itself — the sign of wind touching form.',
+    modern:'Feel air on your skin. Feel breath as wind entering and leaving. Notice air as a living presence — always here, always moving, never grasped.',
+    nimitta:'The acquired sign appears like the trembling of heat haze. The counterpart sign is still, like a breath held perfectly.',
+    complete:'The wind does not carry its destination within it. Neither do you.'
+  },
+  blue:{
+    name:'Blue',pali:'Nīla Kasina',
+    color:'#4a90c4',rgb:'74,144,196',
+    glyph:'●',
+    instruction:'Let the colour blue become the whole of attention. Not sky, not water, not anything blue — just the quality of blueness itself. Pure perception before concept.',
+    tradition:'The Visuddhimagga instructs: gather blue flowers — the colour of flax or similar — and arrange them as a disc, or use blue cloth. Regard the colour with open eyes saying "blue, blue" until the mental sign arises. The colour kasinas train the mind in pure perception.',
+    modern:'Let the colour fill awareness completely. When thoughts arise — "this reminds me of..." — gently return to the colour itself, before the association.',
+    nimitta:'The acquired sign appears as it truly is — the colour itself. The counterpart sign is luminous, as if self-lit from within.',
+    complete:'Before the name, there was only this.'
+  },
+  yellow:{
+    name:'Yellow',pali:'Pīta Kasina',
+    color:'#f4d03f',rgb:'244,208,63',
+    glyph:'●',
+    instruction:'Let yellow fill awareness entirely. The warmth of it. The quality of luminosity that yellow carries even in darkness. Perception before name.',
+    tradition:'The Visuddhimagga instructs: yellow flowers — the colour of the champak or similar — arranged as a disc. Attend to the pure quality of yellowness until the mental image arises stable and clear.',
+    modern:'Yellow is the colour closest to light itself. Let it be luminous. Let awareness rest in warmth.',
+    nimitta:'The acquired sign is the colour as seen. The counterpart sign radiates — as if sunlight were looking at itself.',
+    complete:'The flower does not know it is yellow. You do not need to know you are aware.'
+  },
+  red:{
+    name:'Red',pali:'Lohita Kasina',
+    color:'#e74c3c',rgb:'231,76,60',
+    glyph:'●',
+    instruction:'Let red fill awareness entirely. The intensity of it. The quality of immediacy that red carries. This is perhaps the most activating kasina — bring steady attention to what is vivid.',
+    tradition:'The Visuddhimagga instructs: red flowers — the colour of the China rose or similar — arranged as a disc. The colour kasinas are said to develop the capacity for pure perception, the ground from which insight arises.',
+    modern:'Let the vividness be what it is without adding to it. The mind that can hold intensity without being swept away is the mind that can know things as they are.',
+    nimitta:'The acquired sign is vivid, like the colour as seen. The counterpart sign is luminous red — like a ruby held before a lamp.',
+    complete:'Intensity seen clearly becomes simply what is.'
+  },
+  white:{
+    name:'White',pali:'Odāta Kasina',
+    color:'#ddd8cc',rgb:'221,216,204',
+    glyph:'○',
+    instruction:'Let white fill awareness. Not emptiness — white contains all colours. The quality of clarity, of luminosity, of space that holds without excluding. White is perhaps the most subtle kasina.',
+    tradition:'The Visuddhimagga instructs: white flowers — the colour of the morning star or jasmine — arranged as a disc, or the disc of the full moon, or a clean white cloth. White is said to produce the most stable counterpart sign.',
+    modern:'Let awareness rest in clarity itself. Not blankness — luminous openness. The quality of a mind that is awake and still.',
+    nimitta:'The acquired sign is white as seen. The counterpart sign is said to be like the full moon emerging from cloud — or the morning star at dawn.',
+    complete:'Clarity is not added to the mind. It is what remains when confusion settles.'
+  },
+  space:{
+    name:'Space',pali:'Ākāsa Kasina',
+    color:'#8e9aaf',rgb:'142,154,175',
+    glyph:'◯',
+    instruction:'Attend to space itself. Not empty space — the quality of openness, of room, of the ground in which all phenomena arise and pass. This is among the most subtle of the ten kasinas.',
+    tradition:'The Visuddhimagga instructs: observe a hole in a wall or a window — attend to the space within the aperture, not the frame around it. Space is not nothing. It is the condition for everything.',
+    modern:'Notice the space in this room. The space between objects. The space in which breath moves. The space in which thoughts arise and dissolve. Rest there.',
+    nimitta:'The acquired sign is space as perceived — a hole, an opening. The counterpart sign is limitless and cannot be bounded by the mind.',
+    complete:'Form arises in space. Attention arises in awareness. Neither space nor awareness can be grasped.'
+  },
+  light:{
+    name:'Light',pali:'Āloka Kasina',
+    color:'#f5f0e0',rgb:'245,240,224',
+    glyph:'☀',
+    instruction:'Rest in the quality of light itself — not a source, not a direction, just luminosity as such. Of all the kasinas, this one points most directly at the nature of awareness. Awareness is self-luminous. It does not need another light to see by.',
+    tradition:'The Visuddhimagga instructs: observe a circle of sunlight cast through a hole in a wall or roof — attend to the luminosity itself, not its source, not what it illuminates. Or observe moonlight on a white wall. The light kasina is said to be the swiftest path to the counterpart sign.',
+    modern:'This is the kasina that became yours in a cell at Dhamma Bhumi — a shaft of light under a door, focused by a toilet roll, becoming the object that carried you to stream entry. The light does not care what focuses it. Your attention does the rest.',
+    nimitta:'The acquired sign is the circle of light as seen. The counterpart sign is described by Buddhaghosa as more brilliant than the sun — the mind seeing its own luminosity reflected back.',
+    complete:'The light that illuminates is not separate from the light that is seen.'
+  }
+};
+
+var KASINA_ORDER=['earth','water','fire','air','blue','yellow','red','white','space','light'];
+
+// ── BUILD HOME GRID ──
+var grid=document.getElementById('kasinaGrid');
+KASINA_ORDER.forEach(function(key){
+  var k=KASINAS[key];
+  var card=document.createElement('div');
+  card.className='k-card fade-in';
+  card.innerHTML='<div class="k-dot" style="background:'+k.color+'"></div><div><div class="k-name">'+k.name+'</div><div class="k-pali">'+k.pali+'</div></div>';
+  card.onclick=function(){showSetup(key);};
+  grid.appendChild(card);
+});
+
+// ── SCREENS ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  var n=document.getElementById(id);if(n){n.classList.add('active');n.scrollTop=0;}
+}
+function goHome(){
+  stopPractice();
+  showScreen('s-home');
+  document.getElementById('topBack').style.display='none';
+  document.getElementById('practiceUI').classList.remove('show');
+  setBgTarget(0,0,0,0);
+}
+
+// ── SETUP ──
+var curKey=null,chosenTimer=0;
+var COLOR_SWATCHES={
+  blue:['#1a3a5c','#2e6da4','#4a90c4','#7ec8e3','#a8d8ea','#c8eaf5'],
+  yellow:['#8b6914','#c49a1a','#f4d03f','#f7dc6f','#fdeaa8','#fff5cc'],
+  red:['#7b1a1a','#c0392b','#e74c3c','#f1948a','#f5b7b1','#fadbd8'],
+  white:['#999','#bbb','#ccc','#ddd8cc','#eee','#f5f5f5']
+};
+
+function showSetup(key){
+  curKey=key;chosenTimer=0;
+  var k=KASINAS[key];
+  var inner=document.getElementById('setupInner');
+  inner.innerHTML='';
+
+  var nameEl=document.createElement('div');nameEl.className='setup-name fade-in';
+  nameEl.textContent=k.name;nameEl.style.color=k.color;inner.appendChild(nameEl);
+
+  var paliEl=document.createElement('div');paliEl.className='setup-pali fade-in';
+  paliEl.textContent=k.pali;inner.appendChild(paliEl);
+
+  var instEl=document.createElement('div');instEl.className='setup-instruction fade-in';
+  instEl.textContent=k.instruction;inner.appendChild(instEl);
+
+  // Colour picker for colour kasinas
+  if(['blue','yellow','red','white'].indexOf(key)>-1){
+    var cs=document.createElement('div');cs.id='colorSection';cs.className='color-section fade-in';
+    cs.innerHTML='<div class="color-label">choose your colour</div><div class="color-swatches" id="swatchRow"></div>';
+    inner.appendChild(cs);
+    setTimeout(function(){
+      var row=document.getElementById('swatchRow');
+      if(!row)return;
+      var swatches=COLOR_SWATCHES[key]||[];
+      swatches.forEach(function(hex,i){
+        var sw=document.createElement('div');sw.className='swatch'+(i===2?' active':'');
+        sw.style.background=hex;sw.dataset.hex=hex;
+        sw.onclick=function(){
+          document.querySelectorAll('.swatch').forEach(function(s){s.classList.remove('active');});
+          sw.classList.add('active');
+          // Update the kasina colour
+          KASINAS[key].color=hex;
+          var rgb=hexToRgb(hex);
+          if(rgb)KASINAS[key].rgb=rgb;
+        };
+        row.appendChild(sw);
+      });
+    },50);
+  }
+
+  // Timer
+  var timerDiv=document.createElement('div');timerDiv.className='timer-row fade-in';
+  timerDiv.innerHTML='<div class="timer-label">session length</div><div class="timer-options" id="timerOpts"></div>';
+  inner.appendChild(timerDiv);
+  setTimeout(function(){
+    var opts=document.getElementById('timerOpts');if(!opts)return;
+    [{l:'open',v:0},{l:'5 min',v:5},{l:'10 min',v:10},{l:'20 min',v:20},{l:'30 min',v:30},{l:'45 min',v:45}].forEach(function(o){
+      var btn=document.createElement('button');btn.className='timer-btn'+(o.v===0?' active':'');
+      btn.textContent=o.l;btn.onclick=function(){
+        document.querySelectorAll('.timer-btn').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');chosenTimer=o.v;
+      };
+      opts.appendChild(btn);
+    });
+  },50);
+
+  // Tradition
+  var tradDiv=document.createElement('div');tradDiv.className='setup-tradition fade-in';
+  tradDiv.innerHTML='<div class="setup-trad-label">Visuddhimagga instruction</div><div class="setup-trad-text">'+k.tradition+'</div>';
+  inner.appendChild(tradDiv);
+
+  // Begin
+  var beginBtn=document.createElement('button');beginBtn.className='begin-btn fade-in';
+  beginBtn.textContent='Begin sitting';
+  beginBtn.style.borderColor='rgba('+k.rgb+',.25)';
+  beginBtn.onclick=function(){beginPractice();};
+  inner.appendChild(beginBtn);
+
+  showScreen('s-setup');
+  document.getElementById('topBack').style.display='block';
+}
+
+function hexToRgb(hex){
+  var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  if(isNaN(r))return null;
+  return r+','+g+','+b;
+}
+
+// ── PRACTICE ──
+var practiceActive=false;
+var returnCount=0,practiceStartTime=null,timerInterval=null;
+var nimitta=false,nimittaT=0,nimittaThreshold=180; // seconds of sustained practice
+var settleLevel=0; // 0-1, increases with returns and time
+var RAF=null;
+var bgR=0,bgG=0,bgB=0,bgA=0,bgTR=0,bgTG=0,bgTB=0,bgTA=0;
+
+function setBgTarget(r,g,b,a){bgTR=r;bgTG=g;bgTB=b;bgTA=a;}
+
+// Background animation loop
+(function bgLoop(){
+  requestAnimationFrame(bgLoop);
+  bgR+=(bgTR-bgR)*.02;bgG+=(bgTG-bgG)*.02;bgB+=(bgTB-bgB)*.02;bgA+=(bgTA-bgA)*.02;
+  if(!practiceActive){X.clearRect(0,0,W,H);return;}
+  drawKasina();
+})();
+
+var T=0,lightAngle=0;
+var fireParticles=[],mistP=[],waterRipples=[];
+
+function initKasinaParticles(){
+  fireParticles=[];mistP=[];waterRipples=[];
+  if(curKey==='fire'||curKey==='earth'){
+    for(var i=0;i<60;i++)fireParticles.push({x:Math.random(),y:Math.random()*1.2+.2,vx:(Math.random()-.5)*.003,vy:-(Math.random()*.006+.002),life:Math.random(),r:Math.random()*3+1.5,a:Math.random()*.6+.2});
+  }
+  if(curKey==='air'||curKey==='space'||curKey==='water'){
+    for(var j=0;j<80;j++)mistP.push({x:Math.random()*2-1,y:Math.random()*2-1,vx:(Math.random()-.5)*.006,vy:(Math.random()-.5)*.006,life:Math.random(),ls:Math.random()*.002+.001,r:Math.random()*.5+.15,a:Math.random()*.5+.2,wisp:Math.random()<.2});
+  }
+  if(curKey==='water'){
+    waterRipples.push({r:0,maxR:Math.min(W,H)*.45,a:.6,speed:0.8});
+  }
+}
+
+function drawKasina(){
+  var k=KASINAS[curKey];
+  var rgb=k.rgb;
+  var cx=W/2,cy=H/2;
+  T+=.012;lightAngle+=.004;
+
+  // Smooth settle colour wash
+  X.clearRect(0,0,W,H);
+  var washA=bgA*(0.08+settleLevel*.12);
+  if(washA>.003){
+    var wash=X.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.8);
+    wash.addColorStop(0,'rgba('+Math.round(bgR)+','+Math.round(bgG)+','+Math.round(bgB)+','+washA+')');
+    wash.addColorStop(1,'rgba('+Math.round(bgR)+','+Math.round(bgG)+','+Math.round(bgB)+',0)');
+    X.fillStyle=wash;X.fillRect(0,0,W,H);
+  }
+
+  if(curKey==='fire'){
+    drawFire(cx,cy,rgb);
+  } else if(curKey==='water'){
+    drawWater(cx,cy,rgb);
+  } else if(curKey==='earth'){
+    drawEarth(cx,cy,rgb);
+  } else if(curKey==='air'){
+    drawAir(cx,cy,rgb);
+  } else if(curKey==='light'){
+    drawLight(cx,cy,rgb);
+  } else if(curKey==='space'){
+    drawSpace(cx,cy,rgb);
+  } else if(['blue','yellow','red','white'].indexOf(curKey)>-1){
+    drawColour(cx,cy,rgb);
+  }
+
+  // Nimitta afterimage effect
+  if(nimitta){
+    nimittaT+=.008;
+    var na=Math.sin(nimittaT)*.25+.15;
+    var ng=X.createRadialGradient(cx,cy,0,cx,cy,Math.min(W,H)*.35);
+    ng.addColorStop(0,'rgba('+rgb+','+na+')');
+    ng.addColorStop(.4,'rgba('+rgb+','+(na*.4)+')');
+    ng.addColorStop(1,'rgba('+rgb+',0)');
+    X.fillStyle=ng;X.fillRect(0,0,W,H);
+  }
+}
+
+// ── KASINA VISUALS ──
+function drawFire(cx,cy,rgb){
+  var baseR=Math.min(W,H)*.22;
+  // Core flame glow
+  var flicker=Math.sin(T*3.1)*.08+Math.sin(T*5.7)*.05;
+  var fg=X.createRadialGradient(cx,cy+baseR*.2,0,cx,cy,baseR*(1.4+flicker));
+  fg.addColorStop(0,'rgba('+rgb+',.55)');
+  fg.addColorStop(.3,'rgba('+rgb+',.28)');
+  fg.addColorStop(.7,'rgba('+rgb+',.08)');
+  fg.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=fg;X.fillRect(0,0,W,H);
+  // Rising particles
+  fireParticles.forEach(function(p){
+    p.life+=.015;p.y+=p.vy;p.x+=p.vx+Math.sin(p.life*4+p.x*10)*.001;
+    if(p.life>1||p.y<-0.1){p.life=0;p.y=0.5+Math.random()*.3;p.x=0.4+Math.random()*.2;}
+    var fade=Math.sin(p.life*Math.PI);
+    var px=cx+(p.x-.5)*Math.min(W,H)*.35,py=cy+(p.y-.3)*H*.5;
+    for(var b=0;b<4;b++){var br=p.r*(1+b*1.1);var ba=fade*p.a*(0.5-b*.10);if(ba<.01)continue;X.beginPath();X.arc(px,py,br,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+ba.toFixed(3)+')';X.fill();}
+  });
+  // Flame rings
+  for(var i=0;i<3;i++){var fr=baseR*(1+i*.3)+Math.sin(T*2+i)*6;X.beginPath();X.ellipse(cx,cy+baseR*.15,fr*.7,fr,0,0,Math.PI*2);X.strokeStyle='rgba('+rgb+','+(0.35-i*.10)+')';X.lineWidth=2-i*.5;X.stroke();}
+}
+
+function drawWater(cx,cy,rgb){
+  var baseR=Math.min(W,H)*.3;
+  // Water light
+  var wg=X.createRadialGradient(cx,cy,0,cx,cy,baseR*1.8);
+  wg.addColorStop(0,'rgba('+rgb+',.22)');wg.addColorStop(.5,'rgba('+rgb+',.08)');wg.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=wg;X.fillRect(0,0,W,H);
+  // Ripples
+  waterRipples.forEach(function(r){r.r+=r.speed;r.a*=.992;});
+  waterRipples=waterRipples.filter(function(r){return r.a>.008;});
+  if(Math.random()<.008)waterRipples.push({r:0,maxR:Math.min(W,H)*(.3+Math.random()*.2),a:.5,speed:.5+Math.random()*.4});
+  if(waterRipples.length===0)waterRipples.push({r:0,maxR:Math.min(W,H)*.4,a:.55,speed:.7});
+  waterRipples.forEach(function(r){
+    for(var i=0;i<3;i++){var rr=r.r*(1-i*.18);if(rr<1)return;var ra=r.a*(1-i*.28);X.beginPath();X.arc(cx,cy,rr,0,Math.PI*2);X.strokeStyle='rgba('+rgb+','+ra.toFixed(3)+')';X.lineWidth=Math.max(.5,2-i*.5);X.stroke();}
+  });
+  // Still centre dot
+  X.beginPath();X.arc(cx,cy,3,0,Math.PI*2);X.fillStyle='rgba('+rgb+',.45)';X.fill();
+}
+
+function drawEarth(cx,cy,rgb){
+  var baseR=Math.min(W,H)*.28;
+  // Slow breath
+  var breathe=Math.sin(T*.4)*.06;
+  var eg=X.createRadialGradient(cx,cy,0,cx,cy,baseR*(1.2+breathe));
+  eg.addColorStop(0,'rgba('+rgb+',.35)');eg.addColorStop(.5,'rgba('+rgb+',.15)');eg.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=eg;X.fillRect(0,0,W,H);
+  // Dense rings
+  for(var i=0;i<5;i++){var er=baseR*(1+i*.18);X.beginPath();X.arc(cx,cy,er,0,Math.PI*2);X.strokeStyle='rgba('+rgb+','+(0.40-i*.07)+')';X.lineWidth=3-i*.5;X.stroke();}
+  // Texture particles
+  fireParticles.forEach(function(p){
+    p.life+=.004;
+    if(p.life>1){p.life=0;p.x=Math.random();p.y=Math.random();}
+    var fade=Math.sin(p.life*Math.PI);
+    var angle=p.life*Math.PI*2+p.x*10;
+    var pr=baseR*(0.2+p.x*.7);
+    var px=cx+Math.cos(angle)*pr,py=cy+Math.sin(angle)*pr*.6;
+    X.beginPath();X.arc(px,py,p.r*.8,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+(fade*p.a*.4).toFixed(3)+')';X.fill();
+  });
+}
+
+function drawAir(cx,cy,rgb){
+  mistP.forEach(function(p){
+    p.x+=p.vx;p.y+=p.vy;p.life+=p.ls;
+    if(p.life>1){p.life=0;p.x=(Math.random()*2-1)*.7;p.y=(Math.random()*2-1)*.7;}
+    var fade=Math.sin(p.life*Math.PI);
+    var px=cx+p.x*W*.45,py=cy+p.y*H*.45;
+    var pr=p.r*Math.min(W,H)*.5;
+    if(p.wisp){
+      var wx=px+(p.x>0?1:-1)*p.life*W*.15,wy=py+(p.y>0?1:-1)*p.life*H*.12;
+      var wg=X.createLinearGradient(px,py,wx,wy);
+      wg.addColorStop(0,'rgba('+rgb+','+(fade*p.a*.4)+')');wg.addColorStop(1,'rgba('+rgb+',0)');
+      X.beginPath();X.moveTo(px,py);X.lineTo(wx,wy);X.strokeStyle=wg;X.lineWidth=pr*.3;X.stroke();
+    } else {
+      for(var b=0;b<4;b++){var br=pr*(1+b*1.0);var ba=fade*p.a*(0.45-b*.09);if(ba<.008)continue;X.beginPath();X.arc(px,py,br,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+ba.toFixed(3)+')';X.fill();}
+    }
+  });
+  // Rotating light
+  var lx=cx+Math.cos(lightAngle)*W*.2,ly=cy+Math.sin(lightAngle)*H*.15;
+  var lg=X.createRadialGradient(lx,ly,0,cx,cy,W*.5);
+  lg.addColorStop(0,'rgba('+rgb+',.05)');lg.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=lg;X.fillRect(0,0,W,H);
+}
+
+function drawLight(cx,cy,rgb){
+  var settle=settleLevel;
+  var pulse=Math.sin(T*.5)*.06;
+  // Central light source — gets brighter as settle increases
+  for(var i=4;i>=0;i--){
+    var lr=Math.min(W,H)*(.08+i*.14+pulse+settle*.12);
+    var la=(0.55-i*.09)*(0.4+settle*.6);
+    var lg=X.createRadialGradient(cx,cy,0,cx,cy,lr);
+    lg.addColorStop(0,'rgba('+rgb+','+la+')');
+    lg.addColorStop(1,'rgba('+rgb+',0)');
+    X.fillStyle=lg;X.fillRect(0,0,W,H);
+  }
+  // Rays — very subtle
+  for(var r=0;r<8;r++){
+    var angle=r/8*Math.PI*2+lightAngle*.3;
+    var rayLen=Math.min(W,H)*(.25+Math.sin(T*.8+r)*.06+settle*.15);
+    var rg=X.createLinearGradient(cx,cy,cx+Math.cos(angle)*rayLen,cy+Math.sin(angle)*rayLen);
+    rg.addColorStop(0,'rgba('+rgb+','+(0.08+settle*.10)+')');
+    rg.addColorStop(1,'rgba('+rgb+',0)');
+    X.beginPath();X.moveTo(cx,cy);X.lineTo(cx+Math.cos(angle)*rayLen,cy+Math.sin(angle)*rayLen);
+    X.strokeStyle=rg;X.lineWidth=Math.max(.5,2+settle*2);X.stroke();
+  }
+  // The shaft — the cell-door light
+  var shaftW=Math.min(W,H)*.04+settle*.02;
+  var shaftH=Math.min(W,H)*.55;
+  var sg=X.createLinearGradient(cx,cy-shaftH*.5,cx,cy+shaftH*.5);
+  sg.addColorStop(0,'rgba('+rgb+',0)');
+  sg.addColorStop(.3,'rgba('+rgb+','+(0.18+settle*.22)+')');
+  sg.addColorStop(.7,'rgba('+rgb+','+(0.12+settle*.15)+')');
+  sg.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=sg;X.fillRect(cx-shaftW,cy-shaftH*.5,shaftW*2,shaftH);
+}
+
+function drawSpace(cx,cy,rgb){
+  // Space — very subtle, vast
+  var sg=X.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.9);
+  sg.addColorStop(0,'rgba('+rgb+','+(0.06+settleLevel*.10)+')');
+  sg.addColorStop(.5,'rgba('+rgb+','+(0.03+settleLevel*.05)+')');
+  sg.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=sg;X.fillRect(0,0,W,H);
+  // Drifting points — stars
+  mistP.forEach(function(p){
+    p.life+=p.ls*.5;p.x+=p.vx*.3;p.y+=p.vy*.3;
+    if(p.life>1){p.life=0;p.x=(Math.random()*2-1);p.y=(Math.random()*2-1);}
+    var fade=Math.sin(p.life*Math.PI);
+    var px=cx+p.x*W*.5,py=cy+p.y*H*.5;
+    X.beginPath();X.arc(px,py,p.r*.5,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+(fade*p.a*.35).toFixed(3)+')';X.fill();
+  });
+  // Aperture — the hole in the wall
+  var aR=Math.min(W,H)*(.06+settleLevel*.04);
+  var ag=X.createRadialGradient(cx,cy,0,cx,cy,aR);
+  ag.addColorStop(0,'rgba('+rgb+','+(0.55+settleLevel*.35)+')');
+  ag.addColorStop(.5,'rgba('+rgb+','+(0.20+settleLevel*.15)+')');
+  ag.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=ag;X.fillRect(0,0,W,H);
+}
+
+function drawColour(cx,cy,rgb){
+  // Pure colour — full screen, breathing slowly
+  var pulse=Math.sin(T*.35)*.04;
+  var cg=X.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*(0.8+pulse));
+  cg.addColorStop(0,'rgba('+rgb+','+(0.45+settleLevel*.30)+')');
+  cg.addColorStop(.4,'rgba('+rgb+','+(0.22+settleLevel*.15)+')');
+  cg.addColorStop(.8,'rgba('+rgb+','+(0.08+settleLevel*.06)+')');
+  cg.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=cg;X.fillRect(0,0,W,H);
+  // Subtle pulsing rings
+  for(var i=0;i<4;i++){
+    var cr=Math.min(W,H)*(.15+i*.18+Math.sin(T*.4+i)*.03);
+    X.beginPath();X.arc(cx,cy,cr,0,Math.PI*2);
+    X.strokeStyle='rgba('+rgb+','+(0.25-i*.05)+')';X.lineWidth=1.5-i*.3;X.stroke();
+  }
+}
+
+// ── BEGIN/END PRACTICE ──
+function beginPractice(){
+  var k=KASINAS[curKey];
+  returnCount=0;settleLevel=0;nimitta=false;nimittaT=0;T=0;
+  practiceStartTime=Date.now();
+  var rgb=k.rgb.split(',');
+  setBgTarget(parseInt(rgb[0]),parseInt(rgb[1]),parseInt(rgb[2]),1);
+  document.getElementById('returnCount').textContent='0';
+  document.getElementById('nimitta').classList.remove('arise');
+  document.getElementById('timerDisplay').textContent='';
+  showScreen('s-practice');
+  document.getElementById('topBack').style.display='none';
+  document.getElementById('practiceUI').classList.add('show');
+  initKasinaParticles();
+  practiceActive=true;
+  // Timer
+  if(chosenTimer>0){
+    var endTime=Date.now()+chosenTimer*60000;
+    timerInterval=setInterval(function(){
+      var remaining=Math.max(0,endTime-Date.now());
+      var mins=Math.floor(remaining/60000);
+      var secs=Math.floor((remaining%60000)/1000);
+      document.getElementById('timerDisplay').textContent=mins+':'+(secs<10?'0':'')+secs;
+      if(remaining<=0){clearInterval(timerInterval);endPractice();}
+    },1000);
+  }
+  // Nimitta check
+  setInterval(function(){
+    if(!practiceActive)return;
+    var elapsed=(Date.now()-practiceStartTime)/1000;
+    settleLevel=Math.min(1,elapsed/300); // settles over 5 min
+    if(elapsed>nimittaThreshold&&!nimitta&&returnCount>3){
+      nimitta=true;
+      document.getElementById('nimitta').classList.add('arise');
+      setTimeout(function(){document.getElementById('nimitta').classList.remove('arise');},8000);
+    }
+  },5000);
+}
+
+function logReturn(){
+  returnCount++;
+  var el=document.getElementById('returnCount');
+  el.textContent=returnCount;
+  el.classList.add('flash');
+  setTimeout(function(){el.classList.remove('flash');},400);
+  settleLevel=Math.min(1,settleLevel+.015);
+}
+
+function stopPractice(){
+  practiceActive=false;
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  setBgTarget(0,0,0,0);
+  document.getElementById('practiceUI').classList.remove('show');
+}
+
+function endPractice(){
+  var elapsed=Math.round((Date.now()-practiceStartTime)/60000);
+  stopPractice();
+  var k=KASINAS[curKey];
+  document.getElementById('cGlyph').textContent=k.glyph;
+  document.getElementById('cGlyph').style.color=k.color;
+  document.getElementById('cTitle').textContent=k.name;
+  document.getElementById('cTitle').style.color=k.color;
+  document.getElementById('cTime').textContent=Math.max(1,elapsed);
+  document.getElementById('cReturns').textContent=returnCount;
+  document.getElementById('cQuote').textContent=k.complete;
+  showScreen('s-complete');
+  document.getElementById('topBack').style.display='block';
+}
+
+function startAgain(){showSetup(curKey);}
+</script>
+</body>
+</html>
