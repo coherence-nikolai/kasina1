@@ -350,7 +350,8 @@ function runIntro(){
     if(fadeOut>=1){
       iDone=true;
       iC.style.display='none';
-      document.getElementById('introEnter').style.display='none';
+      var ie=document.getElementById('introEnter');
+      ie.style.display='none';ie.style.pointerEvents='none';ie.style.opacity='0';
       document.getElementById('s-home').classList.add('active');
     }
   }
@@ -1030,7 +1031,8 @@ function beginPractice(){
     },1000);
   }
   // Nimitta check
-  setInterval(function(){
+  if(window._nimittaInterval)clearInterval(window._nimittaInterval);
+  window._nimittaInterval=setInterval(function(){
     if(!practiceActive)return;
     var elapsed=(Date.now()-practiceStartTime)/1000;
     settleLevel=Math.min(1,elapsed/300); // settles over 5 min
@@ -1054,6 +1056,7 @@ function logReturn(){
 function stopPractice(){
   practiceActive=false;
   if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  if(window._nimittaInterval){clearInterval(window._nimittaInterval);window._nimittaInterval=null;}
   setBgTarget(0,0,0,0);
   document.getElementById('practiceUI').classList.remove('show');
 }
@@ -1075,16 +1078,12 @@ function endPractice(){
 
 function startAgain(){showSetup(curKey);}
 function enterMenu(){
-  // Fade intro out then show home
   var el=document.getElementById('introCanvas');
-  var btn=document.getElementById('introEnter');
-  btn.style.opacity='0';btn.style.pointerEvents='none';
-  el.style.transition='opacity .8s ease';
-  el.style.opacity='0';
+  var ie=document.getElementById('introEnter');
+  ie.style.opacity='0';ie.style.pointerEvents='none';ie.style.display='none';
+  el.style.transition='opacity .8s ease';el.style.opacity='0';
   setTimeout(function(){
-    iDone=true;
-    el.style.display='none';
-    document.getElementById('introEnter').style.display='none';
+    iDone=true;el.style.display='none';
     document.getElementById('s-home').classList.add('active');
   },800);
 }
