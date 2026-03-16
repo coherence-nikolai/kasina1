@@ -144,7 +144,7 @@
 </head>
 <body>
 <canvas id="mainCanvas"></canvas>
-<canvas id="introCanvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:300;pointer-events:all"></canvas>
+<canvas id="introCanvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:300;pointer-events:none"></canvas>
 <div id="introEnter" style="position:fixed;bottom:max(env(safe-area-inset-bottom),40px);left:50%;transform:translateX(-50%);z-index:400;opacity:0;transition:opacity 2s ease;pointer-events:none">
   <button onclick="enterMenu()" style="background:rgba(6,6,10,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(232,228,220,.18);border-radius:999px;padding:14px 32px;font-family:var(--serif);font-size:14px;letter-spacing:.18em;text-transform:lowercase;color:rgba(232,228,220,.60);cursor:pointer;-webkit-tap-highlight-color:transparent">enter</button>
 </div>
@@ -342,6 +342,8 @@ function runIntro(){
     var enterEl=document.getElementById('introEnter');
     enterEl.style.opacity='1';enterEl.style.pointerEvents='all';
   }
+  // Keep animation alive — cycle T to prevent drift but keep running
+  if(iT>100)iT=10; // reset to stable mid-point, keeps looping
 }
 runIntro();
 
@@ -682,24 +684,40 @@ function drawWater(cx,cy,rgb){
 }
 
 function drawEarth(cx,cy,rgb){
-  var baseR=Math.min(W,H)*.28;
-  // Slow breath
-  var breathe=Math.sin(T*.4)*.06;
-  var eg=X.createRadialGradient(cx,cy,0,cx,cy,baseR*(1.2+breathe));
-  eg.addColorStop(0,'rgba('+rgb+',.35)');eg.addColorStop(.5,'rgba('+rgb+',.15)');eg.addColorStop(1,'rgba('+rgb+',0)');
-  X.fillStyle=eg;X.fillRect(0,0,W,H);
-  // Dense rings
-  for(var i=0;i<5;i++){var er=baseR*(1+i*.18);X.beginPath();X.arc(cx,cy,er,0,Math.PI*2);X.strokeStyle='rgba('+rgb+','+(0.40-i*.07)+')';X.lineWidth=3-i*.5;X.stroke();}
-  // Texture particles
+  var baseR=Math.min(W,H)*.24;
+  var breathe=Math.sin(T*.35)*.025;
+  var discR=baseR*(1+breathe);
+
+  // Outer glow into darkness
+  var glow=X.createRadialGradient(cx,cy,discR*.4,cx,cy,discR*2.4);
+  glow.addColorStop(0,'rgba('+rgb+','+(0.22+settleLevel*.12)+')');
+  glow.addColorStop(.5,'rgba('+rgb+','+(0.08+settleLevel*.05)+')');
+  glow.addColorStop(1,'rgba('+rgb+',0)');
+  X.fillStyle=glow;X.fillRect(0,0,W,H);
+
+  // The disc — bounded, dark surround
+  var disc=X.createRadialGradient(cx,cy,0,cx,cy,discR);
+  disc.addColorStop(0,'rgba('+rgb+','+(0.85+settleLevel*.10)+')');
+  disc.addColorStop(.65,'rgba('+rgb+','+(0.75+settleLevel*.15)+')');
+  disc.addColorStop(.90,'rgba('+rgb+',.45)');
+  disc.addColorStop(1,'rgba('+rgb+',0)');
+  X.beginPath();X.arc(cx,cy,discR,0,Math.PI*2);X.fillStyle=disc;X.fill();
+
+  // Revolving particles inside the disc — keep this, it's beautiful
   fireParticles.forEach(function(p){
     p.life+=.004;
     if(p.life>1){p.life=0;p.x=Math.random();p.y=Math.random();}
     var fade=Math.sin(p.life*Math.PI);
-    var angle=p.life*Math.PI*2+p.x*10;
-    var pr=baseR*(0.2+p.x*.7);
-    var px=cx+Math.cos(angle)*pr,py=cy+Math.sin(angle)*pr*.6;
-    X.beginPath();X.arc(px,py,p.r*.8,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+(fade*p.a*.4).toFixed(3)+')';X.fill();
+    var angle=p.life*Math.PI*2+p.x*10+T*.2;
+    var pr=discR*(0.15+p.x*.72);
+    var px=cx+Math.cos(angle)*pr,py=cy+Math.sin(angle)*pr*.88;
+    for(var b=0;b<3;b++){var br=p.r*(.7+b*.8);var ba=fade*p.a*(0.35-b*.09);if(ba<.005)continue;X.beginPath();X.arc(px,py,br,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+ba.toFixed(3)+')';X.fill();}
   });
+
+  // Soft edge
+  X.beginPath();X.arc(cx,cy,discR*.97,0,Math.PI*2);
+  X.strokeStyle='rgba('+rgb+','+(0.45+settleLevel*.25)+')';
+  X.lineWidth=1.5+settleLevel;X.stroke();
 }
 
 function drawAir(cx,cy,rgb){
@@ -788,27 +806,43 @@ function drawLight(cx,cy,rgb){
 }
 
 function drawSpace(cx,cy,rgb){
-  // Space — very subtle, vast
-  var sg=X.createRadialGradient(cx,cy,0,cx,cy,Math.max(W,H)*.9);
-  sg.addColorStop(0,'rgba('+rgb+','+(0.06+settleLevel*.10)+')');
-  sg.addColorStop(.5,'rgba('+rgb+','+(0.03+settleLevel*.05)+')');
-  sg.addColorStop(1,'rgba('+rgb+',0)');
-  X.fillStyle=sg;X.fillRect(0,0,W,H);
-  // Drifting points — stars
-  mistP.forEach(function(p){
-    p.life+=p.ls*.5;p.x+=p.vx*.3;p.y+=p.vy*.3;
-    if(p.life>1){p.life=0;p.x=(Math.random()*2-1);p.y=(Math.random()*2-1);}
-    var fade=Math.sin(p.life*Math.PI);
-    var px=cx+p.x*W*.5,py=cy+p.y*H*.5;
-    X.beginPath();X.arc(px,py,p.r*.5,0,Math.PI*2);X.fillStyle='rgba('+rgb+','+(fade*p.a*.35).toFixed(3)+')';X.fill();
-  });
-  // Aperture — the hole in the wall
-  var aR=Math.min(W,H)*(.06+settleLevel*.04);
-  var ag=X.createRadialGradient(cx,cy,0,cx,cy,aR);
-  ag.addColorStop(0,'rgba('+rgb+','+(0.55+settleLevel*.35)+')');
-  ag.addColorStop(.5,'rgba('+rgb+','+(0.20+settleLevel*.15)+')');
+  // Centre aperture — the hole, the point of reference
+  var aR=Math.min(W,H)*(.05+settleLevel*.03);
+  var ag=X.createRadialGradient(cx,cy,0,cx,cy,aR*3);
+  ag.addColorStop(0,'rgba('+rgb+','+(0.65+settleLevel*.30)+')');
+  ag.addColorStop(.3,'rgba('+rgb+','+(0.22+settleLevel*.12)+')');
   ag.addColorStop(1,'rgba('+rgb+',0)');
   X.fillStyle=ag;X.fillRect(0,0,W,H);
+  X.beginPath();X.arc(cx,cy,aR,0,Math.PI*2);
+  var coreG=X.createRadialGradient(cx,cy,0,cx,cy,aR);
+  coreG.addColorStop(0,'rgba(232,228,220,.85)');
+  coreG.addColorStop(1,'rgba('+rgb+',.20)');
+  X.fillStyle=coreG;X.fill();
+
+  // Deep space — occasional distant phenomena drifting through vast darkness
+  mistP.forEach(function(p){
+    p.life+=p.ls*.4;p.x+=p.vx*.2;p.y+=p.vy*.2;
+    if(p.life>1){p.life=0;p.x=(Math.random()*2-1)*.95;p.y=(Math.random()*2-1)*.95;}
+    var fade=Math.sin(p.life*Math.PI);
+    var px=cx+p.x*W*.48,py=cy+p.y*H*.48;
+    // Only render if not too close to centre — space around the object
+    var dist=Math.sqrt((px-cx)*(px-cx)+(py-cy)*(py-cy));
+    if(dist<aR*2.5)return;
+    X.beginPath();X.arc(px,py,p.r*.45,0,Math.PI*2);
+    X.fillStyle='rgba('+rgb+','+(fade*p.a*.22).toFixed(3)+')';X.fill();
+  });
+
+  // Occasional nebula-like wisps very far from centre
+  for(var ni=0;ni<3;ni++){
+    var na=Math.sin(T*.08+ni*2.1+lightAngle)*.018+.010;
+    if(na<.005)continue;
+    var nx=cx+Math.cos(lightAngle*.3+ni*2.1)*W*.32;
+    var ny=cy+Math.sin(lightAngle*.2+ni*1.7)*H*.28;
+    var nr=Math.min(W,H)*(.08+Math.sin(T*.15+ni)*.03);
+    var ng=X.createRadialGradient(nx,ny,0,nx,ny,nr);
+    ng.addColorStop(0,'rgba('+rgb+','+na+')');ng.addColorStop(1,'rgba('+rgb+',0)');
+    X.fillStyle=ng;X.fillRect(0,0,W,H);
+  }
 }
 
 function drawColour(cx,cy,rgb){
