@@ -144,11 +144,12 @@
 </head>
 <body>
 <canvas id="mainCanvas"></canvas>
+<canvas id="introCanvas" style="position:fixed;inset:0;width:100%;height:100%;z-index:300;pointer-events:none"></canvas>
 
 <button id="topBack" onclick="goHome()">←</button>
 
 <!-- HOME -->
-<div class="screen active" id="s-home">
+<div class="screen" id="s-home">
   <div class="home-title">Kasina</div>
   <div class="home-sub">the ten objects of pure concentration</div>
   <div class="kasina-grid" id="kasinaGrid"></div>
@@ -197,6 +198,153 @@ var C=document.getElementById('mainCanvas'),X=C.getContext('2d');
 var W,H;
 function resizeC(){var d=devicePixelRatio||1;W=innerWidth;H=innerHeight;C.width=W*d;C.height=H*d;C.style.width=W+'px';C.style.height=H+'px';X.setTransform(1,0,0,1,0,0);X.scale(d,d);}
 window.addEventListener('resize',resizeC);resizeC();
+
+// ── INTRO ANIMATION ──
+var iC=document.getElementById('introCanvas'),iX=iC.getContext('2d');
+var iW,iH;
+function resizeI(){var d=devicePixelRatio||1;iW=innerWidth;iH=innerHeight;iC.width=iW*d;iC.height=iH*d;iC.style.width=iW+'px';iC.style.height=iH+'px';iX.setTransform(1,0,0,1,0,0);iX.scale(d,d);}
+window.addEventListener('resize',resizeI);resizeI();
+
+var iDone=false,iT=0,iAlpha=1;
+var iParticles=[];
+var ALL_COLORS=[
+  [196,149,106],[90,181,212],[244,162,97],[168,216,234],
+  [74,144,196],[244,208,63],[231,76,60],[221,216,204],
+  [142,154,175],[245,240,224]
+];
+
+// Init particles — all elements simultaneously
+(function(){
+  for(var i=0;i<120;i++){
+    var col=ALL_COLORS[i%ALL_COLORS.length];
+    var angle=Math.random()*Math.PI*2;
+    var dist=Math.random();
+    iParticles.push({
+      angle:angle,
+      dist:dist,
+      vAngle:(Math.random()-.5)*.004,
+      vDist:(Math.random()-.5)*.003,
+      r:Math.random()*3+1,
+      a:Math.random()*.6+.2,
+      col:col,
+      life:Math.random(),
+      lifeSpeed:Math.random()*.006+.002,
+      type:Math.floor(Math.random()*3) // 0=orbit, 1=drift, 2=wisp
+    });
+  }
+})();
+
+function runIntro(){
+  if(iDone)return;
+  requestAnimationFrame(runIntro);
+  iX.clearRect(0,0,iW,iH);
+  iT+=.012;
+
+  var cx=iW/2,cy=iH/2;
+  var maxR=Math.min(iW,iH)*.42;
+  var alpha=iT<.8?(iT/.8):iT>5.5?Math.max(0,1-(iT-5.5)/1.5):1;
+  alpha*=1;
+
+  // Colour cycling — all elements rotate through
+  var colorIdx=Math.floor(iT*1.2)%ALL_COLORS.length;
+  var nextIdx=(colorIdx+1)%ALL_COLORS.length;
+  var blend=(iT*1.2)%1;
+  var c1=ALL_COLORS[colorIdx],c2=ALL_COLORS[nextIdx];
+  var cr=Math.round(c1[0]+(c2[0]-c1[0])*blend);
+  var cg=Math.round(c1[1]+(c2[1]-c1[1])*blend);
+  var cb=Math.round(c1[2]+(c2[2]-c1[2])*blend);
+
+  // Central sun — all elements unified
+  var pulse=Math.sin(iT*2.1)*.06+Math.sin(iT*3.7)*.04;
+  var sunR=maxR*(.55+pulse)*(iT<.8?iT/.8:1);
+
+  // Multiple glow layers
+  for(var gi=5;gi>=0;gi--){
+    var gr=sunR*(1+gi*.28);
+    var ga=(0.18-gi*.025)*alpha;
+    if(ga<.003)continue;
+    var gg=iX.createRadialGradient(cx,cy,0,cx,cy,gr);
+    gg.addColorStop(0,'rgba('+cr+','+cg+','+cb+','+ga+')');
+    gg.addColorStop(1,'rgba('+cr+','+cg+','+cb+',0)');
+    iX.fillStyle=gg;iX.fillRect(0,0,iW,iH);
+  }
+
+  // Core bright centre
+  var coreG=iX.createRadialGradient(cx,cy,0,cx,cy,sunR*.3);
+  coreG.addColorStop(0,'rgba(245,240,224,'+(0.85*alpha)+')');
+  coreG.addColorStop(.4,'rgba('+cr+','+cg+','+cb+','+(0.45*alpha)+')');
+  coreG.addColorStop(1,'rgba('+cr+','+cg+','+cb+',0)');
+  iX.fillStyle=coreG;iX.fillRect(0,0,iW,iH);
+
+  // Rays — fire element
+  for(var ri=0;ri<12;ri++){
+    var rAngle=ri/12*Math.PI*2+iT*.15;
+    var rayL=sunR*(.7+Math.sin(iT*2.3+ri)*.15);
+    var rg=iX.createLinearGradient(cx,cy,cx+Math.cos(rAngle)*rayL,cy+Math.sin(rAngle)*rayL);
+    rg.addColorStop(0,'rgba('+cr+','+cg+','+cb+','+(0.20*alpha)+')');
+    rg.addColorStop(1,'rgba('+cr+','+cg+','+cb+',0)');
+    iX.beginPath();iX.moveTo(cx,cy);iX.lineTo(cx+Math.cos(rAngle)*rayL,cy+Math.sin(rAngle)*rayL);
+    iX.strokeStyle=rg;iX.lineWidth=Math.max(.5,2+Math.sin(iT+ri)*1);iX.stroke();
+  }
+
+  // Orbiting rings — water element
+  for(var wi=0;wi<4;wi++){
+    var wr=sunR*(.6+wi*.22)+Math.sin(iT*1.8+wi)*8;
+    iX.beginPath();iX.arc(cx,cy,wr,0,Math.PI*2);
+    iX.strokeStyle='rgba('+cr+','+cg+','+cb+','+(0.22-wi*.04)*alpha+')';
+    iX.lineWidth=1.5-wi*.3;iX.stroke();
+  }
+
+  // Particles — air/fire elements, all colours
+  iParticles.forEach(function(p){
+    p.life+=p.lifeSpeed;
+    if(p.life>1)p.life=0;
+    p.angle+=p.vAngle;
+    p.dist+=p.vDist;
+    if(p.dist<.05||p.dist>1.1)p.vDist*=-1;
+    var fade=Math.sin(p.life*Math.PI);
+    var pr,px,py;
+    if(p.type===0){
+      // Orbital
+      pr=sunR*(p.dist*.8+.15);
+      px=cx+Math.cos(p.angle)*pr;py=cy+Math.sin(p.angle)*pr;
+    } else if(p.type===1){
+      // Drift — air element
+      pr=sunR*(p.dist*.9+.1);
+      px=cx+Math.cos(p.angle+iT*.1)*pr+Math.sin(iT*.7+p.angle)*sunR*.08;
+      py=cy+Math.sin(p.angle+iT*.1)*pr*.85;
+    } else {
+      // Wisp — rises
+      pr=sunR*(p.dist*.7+.2);
+      px=cx+Math.cos(p.angle)*pr*(1-p.life*.3);
+      py=cy+Math.sin(p.angle)*pr-p.life*sunR*.25;
+    }
+    var pa=fade*p.a*alpha;
+    if(pa<.008)return;
+    var pc=p.col;
+    for(var b=0;b<4;b++){
+      var br=p.r*(1+b*1.0);
+      var ba=pa*(0.50-b*.10);
+      if(ba<.005)continue;
+      iX.beginPath();iX.arc(px,py,br,0,Math.PI*2);
+      iX.fillStyle='rgba('+pc[0]+','+pc[1]+','+pc[2]+','+ba.toFixed(3)+')';
+      iX.fill();
+    }
+  });
+
+  // Fade out
+  if(iT>5.5){
+    var fadeOut=(iT-5.5)/1.8;
+    iX.fillStyle='rgba(6,6,10,'+Math.min(1,fadeOut)+')';
+    iX.fillRect(0,0,iW,iH);
+    if(fadeOut>=1){
+      iDone=true;
+      iC.style.display='none';
+      document.getElementById('s-home').classList.add('active');
+    }
+  }
+}
+runIntro();
 
 // ── KASINAS ──
 var KASINAS={
